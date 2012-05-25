@@ -1,0 +1,132 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Quion Control System</title>
+<link rel="stylesheet" href="http://twitter.github.com/bootstrap/assets/css/bootstrap.css">
+<link rel="stylesheet" href="http://twitter.github.com/bootstrap/assets/css/bootstrap-responsive.css">
+<section></section>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.0.0.beta2/handlebars.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/highcharts/2.2.1/highcharts.js"></script>
+<script id="template" type="text/x-handlebars-template">
+  <div class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+      <div class="container">
+        <a class="brand" href="javascript:window.location.reload()">Quoin Control System</a>
+        <ul class="nav pull-right">
+          <li><a href="http://rustynas.no-ip.info:99/">Security Camera</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="container" style="padding-top:60px">
+    {{#if loading}}
+    <div class="alert alert-info" style="text-align:center">
+    Loading data from controller...
+    </div>
+    {{/if}}
+  
+    <h2 class="page-header">Current Readings</h2>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>AC Power</th>
+          <th>Battery Volts</th>
+          <th>Solar Volts</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          {{#each a}}
+          <td>{{this}}</td>
+          {{/each}}
+        </tr>
+        <td><td colspan="6">&nbsp;</td></td>
+        <tr>
+          <th>Inverter</th>
+          {{#if r1}}
+          <td><a class="toggle btn btn-success btn-mini" id="relay1">On</a></td>
+          {{else}}
+          <td><a class="toggle btn btn-danger btn-mini" id="relay1">Off</a></td>
+          {{/if}}
+          <th>Runtime</th>
+          <td>{{run}} mins</td>
+        </tr>
+        <tr>
+          <th>Garden Pump</th>
+          {{#if r2}}
+          <td><a class="toggle btn btn-success btn-mini" id="relay2">On</a></td>
+          {{else}}
+          <td><a class="toggle btn btn-danger btn-mini" id="relay2">Off</a></td>
+          {{/if}}
+          <th>Page Generation</th>
+          <td>{{p}} ms</td>
+        </tr>
+        <tr>
+          <td colspan=2 />
+          <th>Free Memory</th>
+          <td>{{m}} Bytes</td>
+      </tbody>
+    </table>
+
+    <h2 class="page-header">History</h2>
+    <div id="chart"></div>
+    <div id="powerchart"></div>
+  </div>
+</script>
+<script>
+  var ARDUINO_URI = 'http://59.167.158.82/';
+  
+  var template = Handlebars.compile($("#template").html());
+  
+  $('section:first').html(template({loading:true}));
+  
+  function scale(num) {return num/100;}
+  function callback(context) {
+    // Adjust Data
+    context.a = context.a && context.a.map(scale);
+    context.h1 = context.h1 && context.h1.map(scale);
+    context.h2 = context.h2 && context.h2.map(scale);
+
+    // Render Template
+    $('section:first').html(template(context));
+    
+    // Render Chart
+    chart = new Highcharts.Chart({
+      chart:{renderTo:'chart', type:'spline', height:200, marginBottom:30},
+      title:{text:'Voltages'},
+      xAxis:{labels:{enabled:false}},
+      plotOptions:{spline:{marker:{enabled:false},animation:false}},
+      yAxis:{title:{text:'Voltage'}, opposite:true, min:0, startOnTick:true},
+      legend:{layout:'vertical', align:'left', verticalAlign:'top', x:-10, y:100, borderWidth:0},
+      series:[
+        {name:'Battery', data:context.h2}, 
+        {name:'Solar', data:context.h1}
+      ]
+    });
+
+    powerchart = new Highcharts.Chart({
+      chart:{renderTo:'powerchart', type:'spline', height:200, marginBottom:30},
+      title:{text:'AC Power'},
+      xAxis:{labels:{enabled:false}},
+      plotOptions:{spline:{marker:{enabled:false},animation:false}},
+      yAxis:{title:{text:'Power'}, opposite:true, min:0, startOnTick:true},
+      legend:{layout:'vertical', align:'left', verticalAlign:'top', x:-10, y:100, borderWidth:0},
+      series:[
+        {name:'ACPower', data:context.h0}, 
+      ]
+    });
+
+    // Event handler for Relay Toggles
+    $('.toggle').click(function() {
+      $.getScript(ARDUINO_URI+'?toggle='+$(this).attr('id'));
+    });
+  }
+  
+  // Arduino URL
+  $.getScript(ARDUINO_URI);
+  
+  // Refresh Page every now and then I fall apart
+  setInterval(function() {
+    $.getScript(ARDUINO_URI);
+  }, 30000);
+</script>
