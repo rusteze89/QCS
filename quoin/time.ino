@@ -48,6 +48,15 @@ void setDateTime()
     Wire.write((byte)decToBcd(dateTime[i]));     // 0 to bit 7 starts the clock
   Wire.endTransmission();
 }
+
+void setDateTime(byte *dt)                
+{
+  Wire.beginTransmission(RTC_I2C_ADDR);
+  Wire.write((byte)0);
+  for (byte i = 0; i < 7; i++)
+    Wire.write((byte)decToBcd(dt[i]));     // 0 to bit 7 starts the clock
+  Wire.endTransmission();
+}
  
 // Gets the date and time from the ds1307 and prints result
 void getDateTime()

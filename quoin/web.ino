@@ -29,7 +29,8 @@ void webprintHead()
 
   // callback({a:[],h0:[],h1:[],h2:[],r1:0,r2:1,m:547,p:133,run:32.1});
 
-  client.print("callback({v:0.3");
+  client.print("callback({v:");
+  client.print(VERSION);
 }
 
 // Web Print Instant
@@ -37,7 +38,11 @@ void webprintHead()
 void webprintInstant()
 {
   client.print(",a:[");
-  client.print(data[0][dataIndex]); // this should be the AC amps data
+  #if SD_EN
+    // print latest datapoint from SD card
+  #else
+    client.print(data[0][dataIndex]); // this should be the AC amps data
+  #endif
   for (byte i = 1; i < NUM_ANALOG; i++)
   {
     client.print(",");
@@ -50,21 +55,25 @@ void webprintInstant()
 // sends the short term history data for each recorded input
 void webprintHistory()
 {
-  for (byte i = 0; i < NUM_ANALOG; i++)
-  {
-    client.print(",h");
-    client.print(i);
-    client.print(":[");
-    byte j = (dataIndex + 1) % DATA_SET;
-    while(j != dataIndex)
+  #if SD_EN
+    // print data if using SD
+  #else
+    for (byte i = 0; i < NUM_ANALOG; i++)
     {
+      client.print(",h");
+      client.print(i);
+      client.print(":[");
+      byte j = (dataIndex + 1) % DATA_SET;
+      while(j != dataIndex)
+      {
+        client.print(data[i][j]);
+        client.print(",");
+        j = (j + 1) % DATA_SET;
+      }
       client.print(data[i][j]);
-      client.print(",");
-      j = (j + 1) % DATA_SET;
+      client.print("]");
     }
-    client.print(data[i][j]);
-    client.print("]");
-  }
+  #endif
 }
 
 // Web Print Relays

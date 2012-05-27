@@ -15,18 +15,21 @@
 
 #include <Ethernet.h>
 #include <RTClib.h>
+#include <SD.h>
 #include <SPI.h>
 #include "Wire.h"
 #include <avr/pgmspace.h>
 #include <utility/w5100.h>
 
+#define VERSION       0.30
+
 // Debugger enables
-#define DEBUG         1
+#define DEBUG         0
 #define DEBUG_MEM     0
-#define DEBUG_WEB     1
+#define DEBUG_WEB     0
 
 // Functionality Switches
-#define SD_EN         0
+#define SD_EN         1
 #define TIME_EN       1
 #define WEB_EN        1
 
@@ -54,7 +57,7 @@ unsigned long webTimeout;
 unsigned long nextDataCheck;
 EthernetClient client;      // global for better memory management
 
-#if !SD_EN      // global vars for data storage if not using SD card
+#if SD_EN == 0 // global vars for data storage if not using SD card
   #define DATA_SET 50    // number of recent data points to keep
   byte  dataIndex;
   short data[3][DATA_SET];
@@ -89,9 +92,9 @@ void setup()
   // set outputs
   for (int i=0; i<8; i++)
     pinMode(i, OUTPUT);
-#if DEBUG
-  Serial.println("initialization complete");
-#endif
+  #if DEBUG
+    Serial.println("initialization complete");
+  #endif
 }
 
 // Loop
@@ -170,9 +173,8 @@ void loop()
 //              either onto SD or global vars
 void checkAnalogData()
 {
-  dataIndex = (dataIndex + 1) % DATA_SET;
 
-// AC current mesurement
+  // AC current mesurement
   int powerMax = 0;
   int val = 0;
   unsigned long tmeasure = millis() + 100;
@@ -185,13 +187,16 @@ void checkAnalogData()
       powerMax = val;
   }
   float current=(float)powerMax/1024*5/800*2000000;
-  data[APIN_ACPOWER][dataIndex]=current/1.414;
 
-// Battery voltage measurement
-  data[APIN_BATTERY][dataIndex] = map(analogRead(APIN_BATTERY), 0, 1024, 0, 1500);
-
-// Solar voltage measurement
-  data[APIN_SOLAR][dataIndex]   = map(analogRead(APIN_SOLAR),   0, 1024, 0, 1500);
+  #if SD_EN
+    int battery = map(analogRead(APIN_BATTERY), 0, 1024, 0, 1500);
+    int solar   = map(analogRead(APIN_SOLAR),   0, 1024, 0, 1500);
+  #else
+    dataIndex = (dataIndex + 1) % DATA_SET;
+    data[APIN_ACPOWER][dataIndex]=current/1.414;
+    data[APIN_BATTERY][dataIndex] = map(analogRead(APIN_BATTERY), 0, 1024, 0, 1500);
+    data[APIN_SOLAR][dataIndex]   = map(analogRead(APIN_SOLAR),   0, 1024, 0, 1500);
+  #endif
 }
 
 
