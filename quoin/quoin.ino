@@ -13,18 +13,35 @@
  * * implement SD card storage
  */
 
-#include <SPI.h>
 #include <Ethernet.h>
 #include <RTClib.h>
+#include <SPI.h>
 #include "Wire.h"
 #include <avr/pgmspace.h>
 #include <utility/w5100.h>
 
-#define DEBUG       1
-#define DATA_SET    50   // number of recent data points to keep
-#define DATA_FREQ   5000  // 5 sec between data collections
-#define WEB_TIMEOUT 1000  // ms before web client is booted off
+// Debugger enables
+#define DEBUG         1
+#define DEBUG_MEM     0
+#define DEBUG_WEB     1
 
+// Functionality Switches
+#define SD_EN         0
+#define TIME_EN       1
+#define WEB_EN        1
+
+// General IO Pins used
+#define APIN_ACPOWER  0     // analog pin for AC amps reading off inverter
+#define APIN_BATTERY  1     // analog pin for battery voltage reading
+#define APIN_SOLAR    2     // analog pin for solar voltage reading
+#define APIN_SDA      5     // i2c SDA pin (analog 5)
+#define APIN_SCL      6     // i2c SCL pin (analog 6)
+#define PIN_RELAY1    2     // pin for power relay output
+#define PIN_RELAY2    3     // pin for power relay output
+
+// Constants for timing
+#define DATA_FREQ     5000  // 5 sec between data collections
+#define WEB_TIMEOUT   1000  // ms before web client is booted off
 
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
@@ -32,29 +49,43 @@ byte           mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xEF };
 IPAddress      ip(59,167,158,82);
 EthernetServer webserver(80);
 
-short data[3][DATA_SET];
-byte  dataIndex;
-unsigned long currentTime;
+//unsigned long curMillis;
 unsigned long webTimeout;
 unsigned long nextDataCheck;
 EthernetClient client;      // global for better memory management
 
+#if !SD_EN      // global vars for data storage if not using SD card
+  #define DATA_SET 50    // number of recent data points to keep
+  byte  dataIndex;
+  short data[3][DATA_SET];
+#endif
+// Setup
+// Return Type: none
+// Description: performs once off setup operations on system startup
 void setup()
 {
-#if DEBUG
-  Serial.begin(115200);     // start serial for Debugging
-  Serial.println("\n\nQuoin Control System");
-  Serial.println("--------------------");
-  Serial.println("serial debugging");
-#endif
-//  setDateTime();            // set the RTC (until i put a battery in)
-  // start ethernet and tell wiznet ethernet chip
-  // to timeout if it can't connect for response
-  Ethernet.begin(mac, ip);
-  W5100.setRetransmissionTime(0x07D0);
-  W5100.setRetransmissionCount(3);
-
-  webserver.begin();        // start web server
+  #if DEBUG
+    Serial.begin(115200);   // start serial for Debugging
+    Serial.println("\n\nQuoin Control System");
+    Serial.println("--------------------");
+    Serial.println("debugging enabled");
+  #endif
+  #if TIME_EN
+    Wire.begin();             // start i2c
+    //setDateTime();          // only use when RTC needs to be set
+    #if DEBUG
+      Serial.println("i2c interface started for RTC");
+    #endif
+  #endif
+  #if WEB_EN
+    Ethernet.begin(mac, ip);              // start ethernet
+    W5100.setRetransmissionTime(0x07D0);  // wiznet ethernet chip timeout
+    W5100.setRetransmissionCount(3);
+    webserver.begin();        // start web server
+    #if DEBUG
+      Serial.println("ethernet + webserver started");
+    #endif
+  #endif
   // set outputs
   for (int i=0; i<8; i++)
     pinMode(i, OUTPUT);
@@ -63,31 +94,32 @@ void setup()
 #endif
 }
 
+// Loop
+// Return Type: none
+// Description: base code loop that manages system operation
 void loop()
 {
   // Check if it's time to update data
-  currentTime = millis();
-  if (currentTime > nextDataCheck)
+  if (millis() > nextDataCheck)
   {
-    nextDataCheck = currentTime + DATA_FREQ;
-    checkData();
-//    getDateTime();
+    nextDataCheck += DATA_FREQ;
+    checkAnalogData();
+    getDateTime();
   }
   // Respond to any  gooweb requests
   client = webserver.available();
   if (client)
   {
-    currentTime = millis();
-    webTimeout = currentTime + WEB_TIMEOUT;
+    webTimeout = millis() + WEB_TIMEOUT;
     String request = String();
     while (client.connected())
     {
-      if (currentTime > webTimeout)
+      if (millis() > webTimeout)
       {
-#if DEBUG
-        Serial.print(millis());
-        Serial.println(" WEB TIMEOUT");
-#endif
+        #if DEBUG
+          Serial.print(millis());
+          Serial.println(" WEB TIMEOUT");
+        #endif
         client.stop();
         delay(100);
         break;
@@ -96,7 +128,7 @@ void loop()
       {
         char c = client.read();
         // Process Request
-        if (request.length() < 100)
+        if (request.length() < 50)
         {
           request += c;
         }
@@ -104,14 +136,21 @@ void loop()
         // Generate Response
         if (c == '\n')
         {
+          #if DEBUG
+            Serial.print("web request: ");
+            Serial.print(request);
+          #endif
           checkToggles(request);
           webprintHead();
           webprintInstant();
           webprintHistory();
           webprintRelays();
-          currentTime = millis();
-          webprintPageGen(currentTime - (webTimeout - WEB_TIMEOUT));
-          // webprintMemory(memoryTest());
+          #if DEBUG_WEB
+            webprintPageGen(millis() - (webTimeout - WEB_TIMEOUT));
+            #if DEBUG_MEM
+              webprintMemory(memoryTest());
+            #endif
+          #endif
           webprintEnd();
           // Give the web browser heaps of time to receive the data
           // 1ms is normally enough... but still...
@@ -123,6 +162,58 @@ void loop()
   }
 }
 
+//////////////////// IO OPERATIONS ////////////////////
+
+// Check Data
+// Return Type: none
+// Description: reads analog inputs and stores the values
+//              either onto SD or global vars
+void checkAnalogData()
+{
+  dataIndex = (dataIndex + 1) % DATA_SET;
+
+// AC current mesurement
+  int powerMax = 0;
+  int val = 0;
+  unsigned long tmeasure = millis() + 100;
+  while (millis() < tmeasure)
+  {
+    val = analogRead(APIN_ACPOWER);
+
+    // record the maximum sensor value
+    if (val > powerMax)
+      powerMax = val;
+  }
+  float current=(float)powerMax/1024*5/800*2000000;
+  data[APIN_ACPOWER][dataIndex]=current/1.414;
+
+// Battery voltage measurement
+  data[APIN_BATTERY][dataIndex] = map(analogRead(APIN_BATTERY), 0, 1024, 0, 1500);
+
+// Solar voltage measurement
+  data[APIN_SOLAR][dataIndex]   = map(analogRead(APIN_SOLAR),   0, 1024, 0, 1500);
+}
+
+
+
+// Toggle
+// Return Type: NULL
+// Description: Toggles the pin passed to it.
+//              Used to toggle relay outputs.
+void toggle(byte pin)
+{
+  if (digitalRead(pin))
+    digitalWrite(pin, LOW);
+  else
+    digitalWrite(pin, HIGH);
+}
+
+// Memory Test
+// Return Type: short integer (2 bytes)
+// Description: allocates ram, counting the number of bytes that were free
+//    until the ram is full, returning that number and deallocating the ram used.
+//    This function can cause the system to become unstable, particularly if
+//    an interrupt routine occurs before memory is deallocated
 short memoryTest()
 {
   short byteCounter = 0;

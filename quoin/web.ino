@@ -3,7 +3,7 @@
  * module for printing data to the web interface
  */
 
-#define NUM_ANALOG 3
+#define NUM_ANALOG 3  // number of analog logs to output
 
 // Check Toggles
 // checks received items from the web
@@ -85,7 +85,7 @@ void webprintPageGen(unsigned long time)
   client.print(",p:");
   client.print(time);
   client.print(",run:");
-  client.print((float)currentTime/60000);
+  client.print((float)millis()/60000);
 }
 
 // Web Print Memory
