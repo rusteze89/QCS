@@ -2,8 +2,7 @@
 
 ## Arduino Code
 Quoin folder contains arduino code segmented into primary modules
-- quoin - contains most global variables & definitions as well as setup and loop routines
-- io    - contains functions for the input output operations for the control system
+- quoin - contains most global variables & definitions as well as setup, loop & general I/O routines
 - time  - contains functions for setting and getting the time from a Real Time Clock chip
 - web   - functions for interpreting received http messages as well as sending json callbacks
 
