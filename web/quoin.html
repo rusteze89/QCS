@@ -1,129 +1,125 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>Quion Control System</title>
+<meta name="viewport" content="width=320, initial-scale=1.0, maximum-scale=1.0" />
+<title>Quoin Control System</title>
 <link rel="stylesheet" href="http://twitter.github.com/bootstrap/assets/css/bootstrap.css">
 <link rel="stylesheet" href="http://twitter.github.com/bootstrap/assets/css/bootstrap-responsive.css">
-<section></section>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-<script src="http://cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.0.0.beta2/handlebars.min.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 <script src="http://cdnjs.cloudflare.com/ajax/libs/highcharts/2.2.1/highcharts.js"></script>
-<script id="template" type="text/x-handlebars-template">
-  <div class="navbar navbar-fixed-top">
-    <div class="navbar-inner">
-      <div class="container">
-        <a class="brand" href="javascript:window.location.reload()">Quoin Control System</a>
-        <ul class="nav pull-right">
-          <li><a href="http://rustynas.no-ip.info:99/">Security Camera</a></li>
-        </ul>
-      </div>
+<style type="text/css" media="screen">
+  table{width:auto !important;margin:0 auto}
+  td,th{padding:0 2em;text-align:center !important}
+  p{text-align:center;margin-top:1em}
+</style>
+<div class="navbar">
+  <div class="navbar-inner">
+    <div class="container">
+      <a class="brand" href="javascript:window.location.reload()">Quoin Control System</a>
+      <ul class="nav">
+        <li><a href="http://rustynas.no-ip.info:99/">Security Camera</a></li>
+      </ul>
     </div>
   </div>
-  <div class="container" style="padding-top:60px">
-    {{#if loading}}
-    <div class="alert alert-info" style="text-align:center">
-    Loading data from controller...
-    </div>
-    {{/if}}
-  
-    <h2 class="page-header">Current Readings</h2>
-    <table class="table table-striped">
-      <thead>
-        <tr>
-          <th>AC Power</th>
-          <th>Battery Volts</th>
-          <th>Solar Volts</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          {{#each a}}
-          <td>{{this}}</td>
-          {{/each}}
-        </tr>
-        <td><td colspan="6">&nbsp;</td></td>
-        <tr>
-          <th>Inverter</th>
-          {{#if r1}}
-          <td><a class="toggle btn btn-success btn-mini" id="relay1">On</a></td>
-          {{else}}
-          <td><a class="toggle btn btn-danger btn-mini" id="relay1">Off</a></td>
-          {{/if}}
-          <th>Runtime</th>
-          <td>{{run}} mins</td>
-        </tr>
-        <tr>
-          <th>Garden Pump</th>
-          {{#if r2}}
-          <td><a class="toggle btn btn-success btn-mini" id="relay2">On</a></td>
-          {{else}}
-          <td><a class="toggle btn btn-danger btn-mini" id="relay2">Off</a></td>
-          {{/if}}
-          <th>Page Generation</th>
-          <td>{{p}} ms</td>
-        </tr>
-        <tr>
-          <td colspan=2 />
-          <th>Free Memory</th>
-          <td>{{m}} Bytes</td>
-      </tbody>
-    </table>
+</div>
+<div id="loading" class="container">
+  <p class="alert alert-info">Loading data from controller...</p>
+</div>
+<div class="container" style="display:none">
+  <p>
+    <span class="r1">
+      <a class="on toggle btn btn-success">Inverter - On</a>
+      <a class="off toggle btn btn-danger">Inverter - Off</a>
+      <a class="manual disabled toggle btn btn-inverse">Inverter - Manual</a>
+    </span>
+    <span class="r2">
+      <a class="on toggle btn btn-success">Garden Pump - On</a>
+      <a class="off toggle btn btn-danger">Garden Pump - Off</a>
+    </span>
+  </p>
+  <p id="debug"></p>
 
-    <h2 class="page-header">History</h2>
-    <div id="chart"></div>
-    <div id="powerchart"></div>
-  </div>
-</script>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>AC Power</th>
+        <th>Battery Volts</th>
+        <th>Solar Volts</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td id="ac"></td>
+        <td id="b"></td>
+        <td id="s"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div id="chart"></div>
+</div>
 <script>
   var ARDUINO_URI = 'http://59.167.158.82/';
-  
-  var template = Handlebars.compile($("#template").html());
-  
-  $('section:first').html(template({loading:true}));
-  
+  var chart;
+
+  $('.toggle').hide();
+
   function scale(num) {return num/100;}
   function callback(context) {
-    // Adjust Data
-    context.a = context.a && context.a.map(scale);
-    context.h1 = context.h1 && context.h1.map(scale);
-    context.h2 = context.h2 && context.h2.map(scale);
+    // Hide loading message and show data
+    $('#loading').remove();
+    $('.container').show();
 
-    // Render Template
-    $('section:first').html(template(context));
-    
-    // Render Chart
+    // Adjust data
+    context.h1 = context.h1 && $.map(context.h1, scale);
+    context.h2 = context.h2 && $.map(context.h2, scale);
+
+    // Extract latest readings
+    context.ac = context.h0.slice(-1);
+    context.b = context.h1.slice(-1);
+    context.s = context.h2.slice(-1);
+
+    // Display data
+    $.each(context, function(key, value) {
+      $('#'+key).text(value);
+    });
+
+    // Render charts
+    if (chart && chart.destroy) chart.destroy();
     chart = new Highcharts.Chart({
-      chart:{renderTo:'chart', type:'spline', height:200, marginBottom:30},
-      title:{text:'Voltages'},
+      chart:{renderTo:'chart', type:'spline', height:400, marginBottom:50},
+      title:{text:'History'},
       xAxis:{labels:{enabled:false}},
       plotOptions:{spline:{marker:{enabled:false},animation:false}},
-      yAxis:{title:{text:'Voltage'}, opposite:true, min:0, startOnTick:true},
-      legend:{layout:'vertical', align:'left', verticalAlign:'top', x:-10, y:100, borderWidth:0},
-      series:[
-        {name:'Battery', data:context.h2}, 
-        {name:'Solar', data:context.h1}
-      ]
+      yAxis:[
+        {title:{text:'Voltage'}, opposite:true, min:0, startOnTick:true},
+        {title:{text:'AC Power'}, min:0, startOnTick:true}
+      ],
+      legend:{layout:'horizontal', align:'center', verticalAlign:'bottom', y:-10, borderWidth:0},
+      series: [{name:'Battery', yAxis:0, data:context.h2}, {name:'Solar', yAxis:0, data:context.h1}, {name:'AC Power', yAxis:1, data:context.h0}]
+    });
+    $('tspan:contains(Highcharts.com)').remove();
+
+    // Relays
+    $('.toggle').hide(); // Hide buttons
+    $('.on, .off').removeClass('disabled');
+
+    // Show appropriate button for each toggle
+    $.each(['r1', 'r2'], function(i, relay) {
+      var x = context[relay];
+      $('.'+relay).find('.'+(x==-1 ? 'manual' : (x==0 ? 'off' : 'on'))).show();;
     });
 
-    powerchart = new Highcharts.Chart({
-      chart:{renderTo:'powerchart', type:'spline', height:200, marginBottom:30},
-      title:{text:'AC Power'},
-      xAxis:{labels:{enabled:false}},
-      plotOptions:{spline:{marker:{enabled:false},animation:false}},
-      yAxis:{title:{text:'Power'}, opposite:true, min:0, startOnTick:true},
-      legend:{layout:'vertical', align:'left', verticalAlign:'top', x:-10, y:100, borderWidth:0},
-      series:[{name:'ACPower', data:context.h0}]
-    });
-
-    // Event handler for Relay Toggles
-    $('.toggle').click(function() {
-      $.getScript(ARDUINO_URI+'?toggle='+$(this).attr('id'));
+    // Respond to toggle
+    $('a.toggle:not(.disabled)').on('click', function() {
+      $('.toggle').addClass('disabled').off('click');
+      $.getScript(ARDUINO_URI+'?toggle='+$(this).parent().attr('class'));
     });
   }
-  
-  // Arduino URL
+
+  // Load data
   $.getScript(ARDUINO_URI);
-  
-  // Refresh Page every now and then I fall apart
+
+  // Update data
   setInterval(function() {
     $.getScript(ARDUINO_URI);
   }, 30000);
