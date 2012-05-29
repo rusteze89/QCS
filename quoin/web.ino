@@ -33,24 +33,6 @@ void webprintHead()
   client.print(VERSION);
 }
 
-// Web Print Instant
-// sends the instantaneous data
-void webprintInstant()
-{
-  client.print(",a:[");
-  #if SD_EN
-    // print latest datapoint from SD card
-  #else
-    client.print(data[0][dataIndex]); // this should be the AC amps data
-  #endif
-  for (byte i = 1; i < NUM_ANALOG; i++)
-  {
-    client.print(",");
-    client.print(map(analogRead(i), 0, 1024, 0, 1500));
-  }
-  client.print("]");
-}
-
 // Web Print History
 // sends the short term history data for each recorded input
 void webprintHistory()
@@ -86,23 +68,21 @@ void webprintRelays()
   client.print(digitalRead(PIN_RELAY2));
 }
 
-// Web Print Page Gen
-// sends the page generation time
-// (up to the point where this function is called)
-void webprintPageGen(unsigned long time)
+// Web Print Debug
+// sends debug information to the web front end
+void webprintDebug(unsigned long time)
 {
-  client.print(",p:");
-  client.print(time);
-  client.print(",run:");
-  client.print((float)millis()/60000);
-}
-
-// Web Print Memory
-// sends the free memory of the arduino
-void webprintMemory(short mem)
-{
-  client.print(",m:");
-  client.print(mem);
+  #if DEBUG_WEB
+    client.print(",debug:'Page Gen:");
+    client.print(time);
+    client.print(" Runtime:");
+    client.print((float)millis()/60000);
+    #if DEBUG_MEM
+      client.print(" Free Mem:");
+      client.print(memoryTest());
+    #endif
+    client.print("'");
+  #endif
 }
 
 // Web Print End

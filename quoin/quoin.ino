@@ -24,14 +24,14 @@
 #define VERSION       0.30
 
 // Debugger enables
-#define DEBUG         0
-#define DEBUG_MEM     0
-#define DEBUG_WEB     0
+#define DEBUG         0     // debug operation by dumping to serial
+#define DEBUG_MEM     0     // this will make system unstable since it fills ram
+#define DEBUG_WEB     0     // sends debug information to the web front end
 
 // Functionality Switches
-#define SD_EN         1
-#define TIME_EN       1
-#define WEB_EN        1
+#define SD_EN         0     // enables SD card storage/retrieval of history
+#define TIME_EN       1     // enables RTC time functions
+#define WEB_EN        1     // enables web output functions
 
 // General IO Pins used
 #define APIN_ACPOWER  0     // analog pin for AC amps reading off inverter
@@ -145,14 +145,10 @@ void loop()
           #endif
           checkToggles(request);
           webprintHead();
-          webprintInstant();
           webprintHistory();
           webprintRelays();
           #if DEBUG_WEB
-            webprintPageGen(millis() - (webTimeout - WEB_TIMEOUT));
-            #if DEBUG_MEM
-              webprintMemory(memoryTest());
-            #endif
+            webprintDebug(millis() - (webTimeout - WEB_TIMEOUT));
           #endif
           webprintEnd();
           // Give the web browser heaps of time to receive the data
