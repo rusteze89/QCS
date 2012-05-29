@@ -7,5 +7,5 @@ Quoin folder contains arduino code segmented into primary modules
 - web   - functions for interpreting received http messages as well as sending json callbacks
 
 ## Web Interface
-Web folder contains web page to load content from arduino and display it nicely  
-This code was written by Matt McDonald and only tweaked by me
+Web folder contains web front end to load content from arduino and display it nicely  
+This was written by Kanshii and only tweaked by me
