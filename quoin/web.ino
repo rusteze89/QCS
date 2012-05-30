@@ -2,6 +2,7 @@
  * web.ino
  * module for printing data to the web interface
  */
+#if WEB_EN
 
 #define NUM_ANALOG 3  // number of analog logs to output
 
@@ -15,6 +16,59 @@ void checkToggles(String request)
 
   if (request.indexOf("toggle=relay2") >= 0) {
     toggle(PIN_RELAY2);
+  }
+}
+
+void webCheck()
+{
+  client = webserver.available();
+  if (client)
+  {
+    webTimeout = millis() + WEB_TIMEOUT;
+    String request = String();
+    while (client.connected())
+    {
+      if (millis() > webTimeout)
+      {
+        #if DEBUG
+          Serial.print(millis());
+          Serial.println(" WEB TIMEOUT");
+        #endif
+        client.stop();
+        delay(100);
+        break;
+      }
+      if (client.available())
+      {
+        char c = client.read();
+        // Process Request
+        if (request.length() < 50)
+        {
+          request += c;
+        }
+
+        // Generate Response
+        if (c == '\n')
+        {
+          #if DEBUG
+            Serial.print("web request: ");
+            Serial.print(request);
+          #endif
+          checkToggles(request);
+          webprintHead();
+          webprintHistory();
+          webprintRelays();
+          #if DEBUG_WEB
+            webprintDebug(millis() - (webTimeout - WEB_TIMEOUT));
+          #endif
+          webprintEnd();
+          // Give the web browser heaps of time to receive the data
+          // 1ms is normally enough... but still...
+          delay(1);
+          client.stop();
+        }
+      }
+    }
   }
 }
 
@@ -73,13 +127,15 @@ void webprintRelays()
 void webprintDebug(unsigned long time)
 {
   #if DEBUG_WEB
-    client.print(",debug:'Page Gen:");
+    client.print(",debug:'Page:");
     client.print(time);
-    client.print(" Runtime:");
+    client.print("ms Runtime:");
     client.print((float)millis()/60000);
+    client.print("mins");
     #if DEBUG_MEM
       client.print(" Free Mem:");
       client.print(memoryTest());
+      client.print("bytes free");
     #endif
     client.print("'");
   #endif
@@ -92,3 +148,5 @@ void webprintEnd()
   // Fin
   client.print("});");
 }
+
+#endif

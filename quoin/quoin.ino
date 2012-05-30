@@ -107,58 +107,14 @@ void loop()
   {
     nextDataCheck += DATA_FREQ;
     checkAnalogData();
-    getDateTime();
+    #if TIME_EN
+      getDateTimeString();
+    #endif
   }
-  // Respond to any  gooweb requests
-  client = webserver.available();
-  if (client)
-  {
-    webTimeout = millis() + WEB_TIMEOUT;
-    String request = String();
-    while (client.connected())
-    {
-      if (millis() > webTimeout)
-      {
-        #if DEBUG
-          Serial.print(millis());
-          Serial.println(" WEB TIMEOUT");
-        #endif
-        client.stop();
-        delay(100);
-        break;
-      }
-      if (client.available())
-      {
-        char c = client.read();
-        // Process Request
-        if (request.length() < 50)
-        {
-          request += c;
-        }
-
-        // Generate Response
-        if (c == '\n')
-        {
-          #if DEBUG
-            Serial.print("web request: ");
-            Serial.print(request);
-          #endif
-          checkToggles(request);
-          webprintHead();
-          webprintHistory();
-          webprintRelays();
-          #if DEBUG_WEB
-            webprintDebug(millis() - (webTimeout - WEB_TIMEOUT));
-          #endif
-          webprintEnd();
-          // Give the web browser heaps of time to receive the data
-          // 1ms is normally enough... but still...
-          delay(1);
-          client.stop();
-        }
-      }
-    }
-  }
+  // if web output is enabled, respond to any web requests
+  #if WEB_EN
+    webCheck();
+  #endif
 }
 
 //////////////////// IO OPERATIONS ////////////////////
