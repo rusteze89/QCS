@@ -6,7 +6,7 @@
 // make sure these includes are in the main file
 // otherwise you may get compile errors
 #include <SD.h>
-
+#if SD_EN
 #define PIN_SD  4   // pin for power relay output
 
 byte setupSD()
@@ -52,7 +52,7 @@ void closeSD(File toClose) {
 
 // Toggle.
 // Toggles the pin passed to it. Used to toggle relay outputs.
-void printSD(File sd, byte dt[], char str[], byte len) {
+void writeSD(File sd, byte dt[], char str[], byte len) {
   #if DEBUG
     Serial.println("printSD");
   #endif
@@ -61,8 +61,11 @@ void printSD(File sd, byte dt[], char str[], byte len) {
     #if DEBUG
       Serial.println("Writing Data");
     #endif
-    sd.print(dt[3] % 10 + dt[3] / 10);
-    sd.print(dt[2] + dt[1]);
+      // replace with getDateTimeString
+    // byte[9] rt = {dt[2] / 10, dt[2] % 10
+    //         ,':', dt[1] / 10, dt[1] % 10
+    //         ,':', dt[0] / 10, dt[0] % 10};
+    sd.print(rt);
     sd.println(str);
     // print to serial for debugging
     Serial.println(str);
@@ -71,3 +74,5 @@ void printSD(File sd, byte dt[], char str[], byte len) {
     Serial.print("error opening file");
   }
 }
+
+#endif

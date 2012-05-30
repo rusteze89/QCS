@@ -3,6 +3,7 @@
  * module for setting and getting the time from the real time clock
  * based off 
  */
+#if TIME_EN
 
 #include "Wire.h"
 #define RTC_I2C_ADDR 0x68 // This is the I2C address
@@ -35,6 +36,7 @@ byte bcdToDec(byte val)
  
 void setDateTime()                
 {
+  byte dateTime[7];
   dateTime[T_SEC]   = 10; // second  
   dateTime[T_MIN]   = 15; // minute
   dateTime[T_HOUR]  = 17; // hour
@@ -81,7 +83,8 @@ void getDateTime()
     Serial.print(":");
     Serial.print(dateTime[T_MIN], DEC);
     Serial.print(":");
-    Serial.print(dateTime[T_SEC], DEC);
+    Serial.print(dateTime[T_SEC] / 10, DEC);
+    Serial.print(dateTime[T_SEC] % 10, DEC);
     Serial.print("  ");
     Serial.print(dateTime[T_DAYM], DEC);
     Serial.print("/");
@@ -90,3 +93,21 @@ void getDateTime()
     Serial.println(dateTime[T_YEAR], DEC);
   #endif
 }
+
+// At this time doesn't return anything - just printing to serial
+void getDateTimeString()
+{
+  getDateTime();
+  // produce charater array with numbers always 2 chars and
+  // shifted to match ascii chars
+  char rt[9] = {(dateTime[2] / 10) + 48, (dateTime[2] % 10) + 48
+          ,':', (dateTime[1] / 10) + 48, (dateTime[1] % 10) + 48
+          ,':', (dateTime[0] / 10) + 48, (dateTime[0] % 10) + 48};
+  #if DEBUG
+    Serial.print("Time: ");
+    Serial.print(rt);
+    Serial.println("...Profit!");
+  #endif
+}
+
+#endif
