@@ -27,11 +27,11 @@ void setupWeb()
 // checks received items from the web
 void checkToggles(String request)
 {
-  if (request.indexOf("toggle=relay1") >= 0) {
+  if (request.indexOf("r=r1") >= 0) {
     toggle(PIN_RELAY1);
   }
 
-  if (request.indexOf("toggle=relay2") >= 0) {
+  if (request.indexOf("r=r2") >= 0) {
     toggle(PIN_RELAY2);
   }
 }
@@ -98,7 +98,7 @@ void webprintHead()
   client.println();
 
 
-  // callback({a:[],h0:[],h1:[],h2:[],r1:0,r2:1,m:547,p:133,run:32.1});
+  // callback({dt:'23:59:59 31/12/2012',h0:[],h1:[],h2:[],r1:0,r2:1,m:547,p:133,run:32.1});
 
   client.print("callback({v:");
   client.print(VERSION);
@@ -108,6 +108,9 @@ void webprintHead()
 // sends the short term history data for each recorded input
 void webprintHistory()
 {
+  client.print(",dt:'");
+  client.print(getDateTimeString());
+  client.print("'");
   #if SD_EN
     // print data if using SD
     // only prints datapoint in memory at this point
