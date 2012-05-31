@@ -24,12 +24,12 @@
 #define VERSION       0.30
 
 // Debugger enables
-#define DEBUG         0     // debug operation by dumping to serial
+#define DEBUG         1     // debug operation by dumping to serial
 #define DEBUG_MEM     0     // this will make system unstable since it fills ram
 #define DEBUG_WEB     0     // sends debug information to the web front end
 
 // Functionality Switches
-#define SD_EN         0     // enables SD card storage/retrieval of history
+#define SD_EN         1     // enables SD card storage/retrieval of history
 #define TIME_EN       1     // enables RTC time functions
 #define WEB_EN        1     // enables web output functions
 
@@ -46,22 +46,18 @@
 #define DATA_FREQ     5000  // 5 sec between data collections
 #define WEB_TIMEOUT   1000  // ms before web client is booted off
 
-// Enter a MAC address and IP address for your controller below.
-// The IP address will be dependent on your local network:
-byte           mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xEF };
-IPAddress      ip(59,167,158,82);
-EthernetServer webserver(80);
-
-//unsigned long curMillis;
-unsigned long webTimeout;
-unsigned long nextDataCheck;
-EthernetClient client;      // global for better memory management
-
-#if SD_EN == 0 // global vars for data storage if not using SD card
-  #define DATA_SET 50    // number of recent data points to keep
-  byte  dataIndex;
-  short data[3][DATA_SET];
+// Constants for analog data
+#define DATA_INPUTS 3       // number of inputs being collected
+#if SD_EN
+  #define DATA_SET 1        // only need 1 data point when recording to SD
+#else // global vars for data storage if not using SD card
+  #define DATA_SET 50       // number of recent data points to keep
 #endif
+
+byte  dataIndex;
+short data[3][DATA_SET];
+unsigned long nextDataCheck;
+
 // Setup
 // Return Type: none
 // Description: performs once off setup operations on system startup
@@ -73,6 +69,8 @@ void setup()
     Serial.println("--------------------");
     Serial.println("debugging enabled");
   #endif
+
+  // setup the time
   #if TIME_EN
     Wire.begin();             // start i2c
     //setDateTime();          // only use when RTC needs to be set
@@ -80,14 +78,13 @@ void setup()
       Serial.println("i2c interface started for RTC");
     #endif
   #endif
+
+  // setup the SD card
+  #if SD_EN
+    setupSD();
+  #endif
   #if WEB_EN
-    Ethernet.begin(mac, ip);              // start ethernet
-    W5100.setRetransmissionTime(0x07D0);  // wiznet ethernet chip timeout
-    W5100.setRetransmissionCount(3);
-    webserver.begin();        // start web server
-    #if DEBUG
-      Serial.println("ethernet + webserver started");
-    #endif
+    setupWeb();
   #endif
   // set outputs
   for (int i=0; i<8; i++)
@@ -125,7 +122,6 @@ void loop()
 //              either onto SD or global vars
 void checkAnalogData()
 {
-
   // AC current mesurement
   int powerMax = 0;
   int val = 0;
@@ -140,14 +136,12 @@ void checkAnalogData()
   }
   float current=(float)powerMax/1024*5/800*2000000;
 
+  dataIndex = (dataIndex + 1) % DATA_SET;
+  data[APIN_ACPOWER][dataIndex]=current/1.414;
+  data[APIN_BATTERY][dataIndex] = map(analogRead(APIN_BATTERY), 0, 1024, 0, 1500);
+  data[APIN_SOLAR][dataIndex]   = map(analogRead(APIN_SOLAR),   0, 1024, 0, 1500);
   #if SD_EN
-    int battery = map(analogRead(APIN_BATTERY), 0, 1024, 0, 1500);
-    int solar   = map(analogRead(APIN_SOLAR),   0, 1024, 0, 1500);
-  #else
-    dataIndex = (dataIndex + 1) % DATA_SET;
-    data[APIN_ACPOWER][dataIndex]=current/1.414;
-    data[APIN_BATTERY][dataIndex] = map(analogRead(APIN_BATTERY), 0, 1024, 0, 1500);
-    data[APIN_SOLAR][dataIndex]   = map(analogRead(APIN_SOLAR),   0, 1024, 0, 1500);
+    writeSDanalog();
   #endif
 }
 

@@ -5,8 +5,9 @@
 
 // make sure these includes are in the main file
 // otherwise you may get compile errors
-#include <SD.h>
 #if SD_EN
+
+#include <SD.h>
 #define PIN_SD  4   // pin for power relay output
 
 byte setupSD()
@@ -32,47 +33,36 @@ byte setupSD()
   return 0;
 }
 
-// Open SD
-// open the file
-// pre-arduino 1.0 one file can be open at a time
-File openSD(char filename[]) {
+// Write SD
+// Writes parameters to SD card
+void writeSDanalog() {
   #if DEBUG
-    Serial.println("openSD");
+    Serial.println("write SD alog.txt");
   #endif
-  File dataFile = SD.open(filename, FILE_WRITE);
-  return dataFile;
-}
-
-void closeSD(File toClose) {
-  #if DEBUG
-    Serial.println("Closing File");
-  #endif
-  toClose.close();
-}
-
-// Toggle.
-// Toggles the pin passed to it. Used to toggle relay outputs.
-void writeSD(File sd, byte dt[], char str[], byte len) {
-  #if DEBUG
-    Serial.println("printSD");
-  #endif
+  // open the analog log file
+  File sd = SD.open("alog.txt", FILE_WRITE);
   // if the file is available, write data
   if (sd) {
-    #if DEBUG
-      Serial.println("Writing Data");
+    // Start line with time
+    #if TIME_EN
+      sd.print(getDateTimeString());
+    #else
+      sd.print(millis());
     #endif
-      // replace with getDateTimeString
-    // byte[9] rt = {dt[2] / 10, dt[2] % 10
-    //         ,':', dt[1] / 10, dt[1] % 10
-    //         ,':', dt[0] / 10, dt[0] % 10};
-    sd.print(rt);
-    sd.println(str);
-    // print to serial for debugging
-    Serial.println(str);
+
+    // print analog data
+    for (byte i = 0; i < DATA_INPUTS; i++) {
+      sd.print(' ');
+      sd.print(data[DATA_INPUTS][1]);
+    }
+    // close the analog log file
+    sd.close();
   }
+  #if DEBUG
   else { // if the file isn't open
-    Serial.print("error opening file");
+      Serial.print("error opening file");
   }
+  #endif
 }
 
 #endif

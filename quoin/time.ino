@@ -95,19 +95,20 @@ void getDateTime()
 }
 
 // At this time doesn't return anything - just printing to serial
-void getDateTimeString()
+String getDateTimeString()
 {
   getDateTime();
   // produce charater array with numbers always 2 chars and
   // shifted to match ascii chars
-  char rt[9] = {(dateTime[2] / 10) + 48, (dateTime[2] % 10) + 48
-          ,':', (dateTime[1] / 10) + 48, (dateTime[1] % 10) + 48
-          ,':', (dateTime[0] / 10) + 48, (dateTime[0] % 10) + 48};
+  String rt = String(dateTime[2] / 10) + String(dateTime[2] % 10)
+      + ':' + String(dateTime[1] / 10) + String(dateTime[1] % 10)
+      + ':' + String(dateTime[0] / 10) + String(dateTime[0] % 10);
   #if DEBUG
     Serial.print("Time: ");
     Serial.print(rt);
     Serial.println("...Profit!");
   #endif
+  return rt;
 }
 
 #endif
