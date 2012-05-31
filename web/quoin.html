@@ -41,16 +41,16 @@
   <table class="table table-striped">
     <thead>
       <tr>
-        <th>AC Power</th>
+        <th>Time</th>
         <th>Battery Volts</th>
-        <th>Solar Volts</th>
+        <th>AC Power</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td id="ac"></td>
+        <td id="dt"></td>
         <td id="b"></td>
-        <td id="s"></td>
+        <td id="ac"></td>
       </tr>
     </tbody>
   </table>
@@ -112,7 +112,7 @@
     // Respond to toggle
     $('a.toggle:not(.disabled)').on('click', function() {
       $('.toggle').addClass('disabled').off('click');
-      $.getScript(ARDUINO_URI+'?toggle='+$(this).parent().attr('class'));
+      $.getScript(ARDUINO_URI+'?r='+$(this).parent().attr('class'));
     });
   }
 
