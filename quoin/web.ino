@@ -4,8 +4,6 @@
  */
 #if WEB_EN
 
-#define NUM_ANALOG 3  // number of analog logs to output
-
 byte           mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xEF };
 IPAddress      ip(59,167,158,82);
 EthernetServer webserver(80);
@@ -111,35 +109,24 @@ void webprintHistory()
   client.print(",dt:'");
   client.print(getDateTimeString());
   client.print("'");
-  #if SD_EN
-    // print data if using SD
-    // only prints datapoint in memory at this point
-    for (byte i = 0; i < NUM_ANALOG; i++)
-    {
-      client.print(",h");
-      client.print(i);
-      client.print(":[");
-      client.print(data[i][0]);
-      client.print("]");
-    }
-  #else
-    // print data using local variables if not using SD
-    for (byte i = 0; i < NUM_ANALOG; i++)
-    {
-      client.print(",h");
-      client.print(i);
-      client.print(":[");
-      byte j = (dataIndex + 1) % DATA_SET;
+  // print data using local variables if not using SD
+  for (byte i = 0; i < DATA_INPUTS; i++)
+  {
+    client.print(",h");
+    client.print(i);
+    client.print(":[");
+    byte j = (dataIndex + 1) % DATA_SET;
+    #if DATA_SET > 1
       while(j != dataIndex)
       {
         client.print(data[i][j]);
         client.print(",");
         j = (j + 1) % DATA_SET;
       }
-      client.print(data[i][j]);
-      client.print("]");
-    }
-  #endif
+    #endif
+    client.print(data[i][j]);
+    client.print("]");
+  }
 }
 
 // Web Print Relays
