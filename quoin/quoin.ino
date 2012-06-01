@@ -36,22 +36,21 @@
 // General IO Pins used
 #define APIN_ACPOWER  0     // analog pin for AC amps reading off inverter
 #define APIN_BATTERY  1     // analog pin for battery voltage reading
-#define APIN_SOLAR    2     // analog pin for solar voltage reading
 #define APIN_SDA      5     // i2c SDA pin (analog 5)
 #define APIN_SCL      6     // i2c SCL pin (analog 6)
 #define PIN_RELAY1    2     // pin for power relay output
 #define PIN_RELAY2    3     // pin for power relay output
 
 // Constants for timing
-#define DATA_FREQ     5000  // 5 sec between data collections
 #define WEB_TIMEOUT   1000  // ms before web client is booted off
 
 // Constants for analog data
-#define DATA_INPUTS 3       // number of inputs being collected
+#define DATA_FREQ     5000  // 5 sec between data collections
+#define DATA_INPUTS   2     // number of inputs being collected
 #if SD_EN
-  #define DATA_SET 1        // only need 1 data point when recording to SD
-#else // global vars for data storage if not using SD card
-  #define DATA_SET 50       // number of recent data points to keep
+  #define DATA_SET    1     // only need 1 data point when recording to SD
+#else
+  #define DATA_SET    50    // number of recent data points to keep
 #endif
 
 byte  dataIndex;
@@ -134,12 +133,10 @@ void checkAnalogData()
     if (val > powerMax)
       powerMax = val;
   }
-  float current=(float)powerMax/1024*5/800*2000000;
 
   dataIndex = (dataIndex + 1) % DATA_SET;
-  data[APIN_ACPOWER][dataIndex]=current/1.414;
+  data[APIN_ACPOWER][dataIndex] = powerMax;
   data[APIN_BATTERY][dataIndex] = map(analogRead(APIN_BATTERY), 0, 1024, 0, 1500);
-  data[APIN_SOLAR][dataIndex]   = map(analogRead(APIN_SOLAR),   0, 1024, 0, 1500);
   #if SD_EN
     writeSDanalog();
   #endif
