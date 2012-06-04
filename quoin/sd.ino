@@ -2,18 +2,20 @@
  * sd.ino
  * module for storing data on an SD card
  */
+#if SD_EN
 
 // make sure these includes are in the main file
 // otherwise you may get compile errors
-#if SD_EN
-
-#include <SD.h>
+#include <SdFat.h>
 #define PIN_SD  4   // pin for power relay output
 
-byte setupSD()
-{
+
+
+// Setup SD
+// performs setup operations for SD card
+void setupSD() {
   #if DEBUG
-    Serial.print("Initializing SD card...");
+    Serial.print("SD  ");
   #endif
   // make sure that the default chip select pin is set to
   // output, even if you don't use it:
@@ -23,14 +25,12 @@ byte setupSD()
   // see if the card is present and can be initialized:
   if (!SD.begin(PIN_SD)) {
     #if DEBUG
-      Serial.println("Card failed, or not present");
+      Serial.println("FAIL");
     #endif
-    return 1;
   }
   #if DEBUG
-    Serial.println("card initialized.");
+    Serial.println("OK");
   #endif
-  return 0;
 }
 
 // Write SD
@@ -45,16 +45,19 @@ void writeSDanalog() {
   if (sd) {
     // Start line with time
     #if TIME_EN
-      sd.print(getDateTimeString());
+      char t[8];
+      getTimeString(t);
+      sd.print(t);
     #else
       sd.print(millis());
     #endif
 
     // print analog data
     for (byte i = 0; i < DATA_INPUTS; i++) {
-      sd.print(' ');
+      sd.print(',');
       sd.print(data[DATA_INPUTS][1]);
     }
+    sd.println();
     // close the analog log file
     sd.close();
   }

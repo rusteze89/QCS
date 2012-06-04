@@ -17,12 +17,25 @@
 
 byte dateTime[7];
 
+// Setup Time
+// performs setup operations for the Real Time Clock
+void setupTime()
+{
+  Wire.begin();             // start i2c
+  //setDateTime();          // only use when RTC needs to be set
+  #if DEBUG
+    Serial.println("RTC OK");
+  #endif
+}
+
+// Decimal to Binary Coded Decimal
 // Convert normal decimal numbers to binary coded decimal
 byte decToBcd(byte val)
 {
   return ( (val/10*16) + (val%10) );
 }
- 
+
+// Binary Coded Decimal to Decimal
 // Convert binary coded decimal to normal decimal numbers
 byte bcdToDec(byte val)
 {
@@ -77,38 +90,26 @@ void getDateTime()
   dateTime[i++] = bcdToDec(Wire.read() & 0x3f);  // Need to change this if 12 hour am/pm
   while (i < 7)
     dateTime[i++] = bcdToDec(Wire.read());
-
-  #if DEBUG
-    Serial.print(dateTime[T_HOUR], DEC);
-    Serial.print(":");
-    Serial.print(dateTime[T_MIN], DEC);
-    Serial.print(":");
-    Serial.print(dateTime[T_SEC] / 10, DEC);
-    Serial.print(dateTime[T_SEC] % 10, DEC);
-    Serial.print("  ");
-    Serial.print(dateTime[T_DAYM], DEC);
-    Serial.print("/");
-    Serial.print(dateTime[T_MONTH], DEC);
-    Serial.print("/");
-    Serial.println(dateTime[T_YEAR], DEC);
-  #endif
 }
 
 // At this time doesn't return anything - just printing to serial
-String getDateTimeString()
+void getTimeString(char rt[8])
 {
   getDateTime();
   // produce charater array with numbers always 2 chars and
   // shifted to match ascii chars
-  String rt = String(dateTime[2] / 10) + String(dateTime[2] % 10)
-      + ':' + String(dateTime[1] / 10) + String(dateTime[1] % 10)
-      + ':' + String(dateTime[0] / 10) + String(dateTime[0] % 10);
+  rt[0] = dateTime[2] / 10;
+  rt[1] = dateTime[2] % 10;
+  rt[2] = ':';
+  rt[3] = dateTime[1] / 10;
+  rt[4] = dateTime[1] % 10;
+  rt[5] = ':';
+  rt[6] = dateTime[0] / 10;
+  rt[7] = dateTime[0] % 10;
   #if DEBUG
-    Serial.print("Time: ");
-    Serial.print(rt);
-    Serial.println("...Profit!");
+    Serial.print("time string: ");
+    Serial.println(rt);
   #endif
-  return rt;
 }
 
 #endif

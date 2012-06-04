@@ -16,7 +16,7 @@
     <div class="container">
       <a class="brand" href="javascript:window.location.reload()">Quoin Control System</a>
       <ul class="nav">
-        <li><a href="http://rustynas.no-ip.info:99/">Security Camera</a></li>
+        <li><a href="http://59.167.158.114/index1.htm/">Security Camera</a></li>
       </ul>
     </div>
   </div>
@@ -71,12 +71,10 @@
 
     // Adjust data
     context.h1 = context.h1 && $.map(context.h1, scale);
-    context.h2 = context.h2 && $.map(context.h2, scale);
 
     // Extract latest readings
     context.ac = context.h0.slice(-1);
     context.b = context.h1.slice(-1);
-    context.s = context.h2.slice(-1);
 
     // Display data
     $.each(context, function(key, value) {
@@ -95,7 +93,7 @@
         {title:{text:'AC Power'}, min:0, startOnTick:true}
       ],
       legend:{layout:'horizontal', align:'center', verticalAlign:'bottom', y:-10, borderWidth:0},
-      series: [{name:'Battery', yAxis:0, data:context.h2}, {name:'Solar', yAxis:0, data:context.h1}, {name:'AC Power', yAxis:1, data:context.h0}]
+      series: [{name:'Battery', yAxis:0, data:context.h1}, {name:'AC Power', yAxis:1, data:context.h0}]
     });
     $('tspan:contains(Highcharts.com)').remove();
 
@@ -122,5 +120,5 @@
   // Update data
   setInterval(function() {
     $.getScript(ARDUINO_URI);
-  }, 30000);
+  }, 10000);
 </script>

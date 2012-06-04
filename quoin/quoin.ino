@@ -24,8 +24,8 @@
 #define VERSION       0.30
 
 // Debugger enables
-#define DEBUG         1     // debug operation by dumping to serial
-#define DEBUG_MEM     0     // this will make system unstable since it fills ram
+#define DEBUG         0     // debug operation by dumping to serial
+#define DEBUG_MEM     0     // will make system unstable since it fills ram
 #define DEBUG_WEB     0     // sends debug information to the web front end
 
 // Functionality Switches
@@ -41,9 +41,6 @@
 #define PIN_RELAY1    2     // pin for power relay output
 #define PIN_RELAY2    3     // pin for power relay output
 
-// Constants for timing
-#define WEB_TIMEOUT   1000  // ms before web client is booted off
-
 // Constants for analog data
 #define DATA_FREQ     5000  // 5 sec between data collections
 #define DATA_INPUTS   2     // number of inputs being collected
@@ -53,38 +50,29 @@
   #define DATA_SET    50    // number of recent data points to keep
 #endif
 
-byte  dataIndex;
 short data[3][DATA_SET];
 unsigned long nextDataCheck;
+byte  dataIndex;
 
 // Setup
-// Return Type: none
-// Description: performs once off setup operations on system startup
+// performs once off setup operations on system startup
 void setup()
 {
   #if DEBUG
     Serial.begin(115200);   // start serial for Debugging
     Serial.println("\n\nQuoin Control System");
-    Serial.println("--------------------");
-    Serial.println("debugging enabled");
   #endif
 
-  // setup the time
-  #if TIME_EN
-    Wire.begin();             // start i2c
-    //setDateTime();          // only use when RTC needs to be set
-    #if DEBUG
-      Serial.println("i2c interface started for RTC");
-    #endif
+  #if TIME_EN   // setup the real time clock
+    setupTime();
   #endif
-
-  // setup the SD card
-  #if SD_EN
+  #if SD_EN     // setup the sd card
     setupSD();
   #endif
-  #if WEB_EN
+  #if WEB_EN    // setup ethernet and web
     setupWeb();
   #endif
+
   // set outputs
   for (int i=0; i<8; i++)
     pinMode(i, OUTPUT);
@@ -103,9 +91,6 @@ void loop()
   {
     nextDataCheck += DATA_FREQ;
     checkAnalogData();
-    #if TIME_EN
-      getDateTimeString();
-    #endif
   }
   // if web output is enabled, respond to any web requests
   #if WEB_EN
@@ -116,7 +101,6 @@ void loop()
 //////////////////// IO OPERATIONS ////////////////////
 
 // Check Data
-// Return Type: none
 // Description: reads analog inputs and stores the values
 //              either onto SD or global vars
 void checkAnalogData()
@@ -133,8 +117,9 @@ void checkAnalogData()
     if (val > powerMax)
       powerMax = val;
   }
-
-  dataIndex = (dataIndex + 1) % DATA_SET;
+  #if !SD_EN
+    dataIndex = (dataIndex + 1) % DATA_SET;
+  #endif
   data[APIN_ACPOWER][dataIndex] = powerMax;
   data[APIN_BATTERY][dataIndex] = map(analogRead(APIN_BATTERY), 0, 1024, 0, 1500);
   #if SD_EN
@@ -142,12 +127,8 @@ void checkAnalogData()
   #endif
 }
 
-
-
 // Toggle
-// Return Type: NULL
-// Description: Toggles the pin passed to it.
-//              Used to toggle relay outputs.
+// Description: Toggles the pin passed to it. Used to toggle relay outputs.
 void toggle(byte pin)
 {
   if (digitalRead(pin))
