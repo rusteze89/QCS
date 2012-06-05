@@ -7,10 +7,14 @@
 // make sure these includes are in the main file
 // otherwise you may get compile errors
 #include <SdFat.h>
+#include <SPI.h>
 #define PIN_SD  4   // pin for power relay output
 
-
-
+// #### SD CARD VARS #### //
+Sd2Card   sdCard;
+SdVolume  sdVolume;
+SdFile    sdRoot;
+SdFile    sdFile;
 // Setup SD
 // performs setup operations for SD card
 void setupSD() {
@@ -23,14 +27,22 @@ void setupSD() {
   pinMode(PIN_SD, OUTPUT);
 
   // see if the card is present and can be initialized:
-  if (!SD.begin(PIN_SD)) {
+  if (!sdCard.init(SPI_HALF_SPEED,PIN_SD) ||
+      !sdVolume.init(&sdCard) ||
+      !sdRoot.openRoot(&sdVolume)) {
     #if DEBUG
       Serial.println("FAIL");
     #endif
   }
-  #if DEBUG
-    Serial.println("OK");
-  #endif
+  else
+  {
+    #if DEBUG
+      Serial.println("OK");
+      Serial.println(sdVolume.fatType(),DEC);
+    #endif
+    sdRoot.ls(LS_DATE | LS_SIZE);
+    sdRoot.ls(LS_R);
+  }
 }
 
 // Write SD

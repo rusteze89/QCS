@@ -4,15 +4,14 @@
  */
 #if WEB_EN
 
+#include <Ethernet.h>
+#include <utility/w5100.h>
+
 #define WEB_TIMEOUT   5000  // ms before web client is booted off
 
 EthernetServer  webserver(80);
 EthernetClient  client;  // global for simpler memory management
 unsigned long   webTimeout;
-
-// SD CARD STUFF
-SdFile root;
-
 
 // Setup Web
 // performs setup operations for ethernet and web
@@ -57,9 +56,12 @@ void webCheck() {
             Serial.print("web request: ");
             Serial.print(request);
           #endif
+          webPrintHead();
           switch (webCheckRequest(request)) {
-            case  0: webPrintCallback(); break;
-            case  1: webPrintFileList(LS_SIZE); break;
+            case  0: break; // no callback
+            #if SD_EN
+              case  1: webPrintFileList(LS_SIZE); break;
+            #endif
             default: webPrintCallback();
           }
           // Give the web browser heaps of time to receive the data
@@ -83,11 +85,11 @@ byte webCheckRequest(char request[]) {
     toggle(PIN_RELAY2);
     return 2; // 2 to indicate output 2
   }
-  if (strstr(request, "alog.txt") >=0) {
-    client.println("Printing alog.txt");
-    webPrintFile("alog.txt");
-    return 0; // 0 for no callback
-  }
+  // if (strstr(request, "alog.txt") >=0) {
+  //     client.println("Printing alog.txt");
+  //     webPrintFile("alog.txt");
+  //   return 0; // 0 for no callback
+  // }
   return 255;
 }
 
@@ -102,14 +104,13 @@ void webPrintHead() {
 // Web Print Callback
 // collects and prints callback response
 void webPrintCallback() {
-  webPrintHead();
   //callback({dt:'23:59:59 31/12/2012',
   //  h0:[],h1:[],h2:[],r1:0,r2:1,m:547,p:133,run:32.1});
   client.print("callback({v:");
   client.print(VERSION);
 
   // print history
-  char timeString[8];
+  char timeString[9];
   getTimeString(timeString);
   client.print(",dt:'");
   client.print(timeString);
@@ -183,6 +184,8 @@ void webPrintFile(char filename[]) {
 }
 
 void webPrintFileList(uint8_t flags) {
+  client.println("<h1>File List</h1><br/>");
+ #if SD_EN
   // This code is just copied from SdFile.cpp in the SDFat library
   // and tweaked to print to the client output in html!
   dir_t p;
@@ -239,6 +242,9 @@ void webPrintFileList(uint8_t flags) {
     client.println("</li>");
   }
   client.println("</ul>");
+ #else
+  client.println("SD not enabled");
+ #endif
 }
 
 #endif

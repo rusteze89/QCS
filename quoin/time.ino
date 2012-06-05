@@ -5,7 +5,9 @@
  */
 #if TIME_EN
 
+//#include <RTClib.h>
 #include "Wire.h"
+
 #define RTC_I2C_ADDR 0x68 // This is the I2C address
 #define T_SEC   0
 #define T_MIN   1
@@ -14,8 +16,6 @@
 #define T_DAYM  4
 #define T_MONTH 5
 #define T_YEAR  6
-
-byte dateTime[7];
 
 // Setup Time
 // performs setup operations for the Real Time Clock
@@ -49,22 +49,22 @@ byte bcdToDec(byte val)
  
 void setDateTime()                
 {
-  byte dateTime[7];
-  dateTime[T_SEC]   = 10; // second  
-  dateTime[T_MIN]   = 15; // minute
-  dateTime[T_HOUR]  = 17; // hour
-  dateTime[T_DAYW]  = 0;  // day of the week
-  dateTime[T_DAYM]  = 27; // day of the month
-  dateTime[T_MONTH] = 5;  // month
-  dateTime[T_YEAR]  = 12; // year
+  byte rtcDateTime[7];
+  rtcDateTime[T_SEC]   = 10; // second  
+  rtcDateTime[T_MIN]   = 15; // minute
+  rtcDateTime[T_HOUR]  = 17; // hour
+  rtcDateTime[T_DAYW]  = 0;  // day of the week
+  rtcDateTime[T_DAYM]  = 27; // day of the month
+  rtcDateTime[T_MONTH] = 5;  // month
+  rtcDateTime[T_YEAR]  = 12; // year
   Wire.beginTransmission(RTC_I2C_ADDR);
   Wire.write((byte)0);
   for (byte i = 0; i < 7; i++)
-    Wire.write((byte)decToBcd(dateTime[i]));     // 0 to bit 7 starts the clock
+    Wire.write((byte)decToBcd(rtcDateTime[i]));     // 0 to bit 7 starts the clock
   Wire.endTransmission();
 }
 
-void setDateTime(byte *dt)                
+void setDateTime(byte dt[7])                
 {
   Wire.beginTransmission(RTC_I2C_ADDR);
   Wire.write((byte)0);
@@ -74,7 +74,7 @@ void setDateTime(byte *dt)
 }
  
 // Gets the date and time from the ds1307 and prints result
-void getDateTime()
+void getDateTime(byte rtcDateTime[7])
 {
   // Reset the register pointer
   Wire.beginTransmission(RTC_I2C_ADDR);
@@ -85,27 +85,29 @@ void getDateTime()
  
   // A few of these need masks because certain bits are control bits
   byte i = 0;
-  dateTime[i++] = bcdToDec(Wire.read() & 0x7f);
-  dateTime[i++] = bcdToDec(Wire.read());
-  dateTime[i++] = bcdToDec(Wire.read() & 0x3f);  // Need to change this if 12 hour am/pm
+  rtcDateTime[i++] = bcdToDec(Wire.read() & 0x7f);
+  rtcDateTime[i++] = bcdToDec(Wire.read());
+  rtcDateTime[i++] = bcdToDec(Wire.read() & 0x3f);  // Need to change this if 12 hour am/pm
   while (i < 7)
-    dateTime[i++] = bcdToDec(Wire.read());
+    rtcDateTime[i++] = bcdToDec(Wire.read());
 }
 
 // At this time doesn't return anything - just printing to serial
-void getTimeString(char rt[8])
+void getTimeString(char rt[9])
 {
-  getDateTime();
+  byte rtcDateTime[7];
+  getDateTime(rtcDateTime);
   // produce charater array with numbers always 2 chars and
   // shifted to match ascii chars
-  rt[0] = dateTime[2] / 10;
-  rt[1] = dateTime[2] % 10;
+  rt[0] = rtcDateTime[2] / 10 + 48;
+  rt[1] = rtcDateTime[2] % 10 + 48;
   rt[2] = ':';
-  rt[3] = dateTime[1] / 10;
-  rt[4] = dateTime[1] % 10;
+  rt[3] = rtcDateTime[1] / 10 + 48;
+  rt[4] = rtcDateTime[1] % 10 + 48;
   rt[5] = ':';
-  rt[6] = dateTime[0] / 10;
-  rt[7] = dateTime[0] % 10;
+  rt[6] = rtcDateTime[0] / 10 + 48;
+  rt[7] = rtcDateTime[0] % 10 + 48;
+  rt[8] = '\0';
   #if DEBUG
     Serial.print("time string: ");
     Serial.println(rt);

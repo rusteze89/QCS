@@ -13,23 +13,17 @@
  * * implement SD card storage
  */
 
-#include <Ethernet.h>
-#include <RTClib.h>
-#include <SD.h>
-#include <SPI.h>
-#include "Wire.h"
 #include <avr/pgmspace.h>
-#include <utility/w5100.h>
 
 #define VERSION       0.30
 
 // Debugger enables
-#define DEBUG         0     // debug operation by dumping to serial
+#define DEBUG         1     // debug operation by dumping to serial
 #define DEBUG_MEM     0     // will make system unstable since it fills ram
 #define DEBUG_WEB     0     // sends debug information to the web front end
 
 // Functionality Switches
-#define SD_EN         1     // enables SD card storage/retrieval of history
+#define SD_EN         0     // enables SD card storage/retrieval of history
 #define TIME_EN       1     // enables RTC time functions
 #define WEB_EN        1     // enables web output functions
 
