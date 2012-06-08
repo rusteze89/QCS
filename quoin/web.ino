@@ -56,14 +56,12 @@ void webCheck() {
             Serial.print("web request: ");
             Serial.print(request);
           #endif
+          byte web_response = webCheckRequest(request);
+
+          // print out the response
           webPrintHead();
-          switch (webCheckRequest(request)) {
-            case  0: break; // no callback
-            #if SD_EN
-              case  1: webPrintFileList(LS_SIZE); break;
-            #endif
-            default: webPrintCallback();
-          }
+          webPrintCallback();
+
           // Give the web browser heaps of time to receive the data
           // 1ms is normally enough... but still...
           delay(1);
@@ -181,70 +179,6 @@ void webPrintFile(char filename[]) {
   #else
     client.print("SD card not enabled");
   #endif
-}
-
-void webPrintFileList(uint8_t flags) {
-  client.println("<h1>File List</h1><br/>");
- #if SD_EN
-  // This code is just copied from SdFile.cpp in the SDFat library
-  // and tweaked to print to the client output in html!
-  dir_t p;
-  
-  root.rewind();
-  client.println("<ul>");
-  while (root.readDir(p) > 0) {
-    // done if past last used entry
-    if (p.name[0] == DIR_NAME_FREE) break;
-
-    // skip deleted entry and entries for . and  ..
-    if (p.name[0] == DIR_NAME_DELETED || p.name[0] == '.') continue;
-
-    // only list subdirectories and files
-    if (!DIR_IS_FILE_OR_SUBDIR(&p)) continue;
-
-    // print any indent spaces
-    client.print("<li><a href=\"");
-    for (uint8_t i = 0; i < 11; i++) {
-      if (p.name[i] == ' ') continue;
-      if (i == 8) {
-        client.print('.');
-      }
-      client.print((char)p.name[i]);
-    }
-    client.print("\">");
-    
-    // print file name with possible blank fill
-    for (uint8_t i = 0; i < 11; i++) {
-      if (p.name[i] == ' ') continue;
-      if (i == 8) {
-        client.print('.');
-      }
-      client.print((char)p.name[i]);
-    }
-    
-    client.print("</a>");
-    
-    if (DIR_IS_SUBDIR(&p)) {
-      client.print('/');
-    }
-
-    // print modify date/time if requested
-    if (flags & LS_DATE) {
-       root.printFatDate(p.lastWriteDate);
-       client.print(' ');
-       root.printFatTime(p.lastWriteTime);
-    }
-    // print size if requested
-    if (!DIR_IS_SUBDIR(&p) && (flags & LS_SIZE)) {
-      client.print(' ');
-      client.print(p.fileSize);
-    }
-    client.println("</li>");
-  }
-  client.println("</ul>");
- #else
-  client.println("SD not enabled");
- #endif
 }
 
 #endif

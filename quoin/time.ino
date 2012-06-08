@@ -3,7 +3,7 @@
  * module for setting and getting the time from the real time clock
  * based off 
  */
-#if TIME_EN
+#if RTC_EN
 
 //#include <RTClib.h>
 #include "Wire.h"

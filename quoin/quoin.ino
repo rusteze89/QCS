@@ -24,7 +24,7 @@
 
 // Functionality Switches
 #define SD_EN         0     // enables SD card storage/retrieval of history
-#define TIME_EN       1     // enables RTC time functions
+#define RTC_EN        1     // enables RTC time functions
 #define WEB_EN        1     // enables web output functions
 
 // General IO Pins used
@@ -54,10 +54,11 @@ void setup()
 {
   #if DEBUG
     Serial.begin(115200);   // start serial for Debugging
+    delay(5);
     Serial.println("\n\nQuoin Control System");
   #endif
 
-  #if TIME_EN   // setup the real time clock
+  #if RTC_EN   // setup the real time clock
     setupTime();
   #endif
   #if SD_EN     // setup the sd card
@@ -73,6 +74,8 @@ void setup()
   #if DEBUG
     Serial.println("initialization complete");
   #endif
+
+  nextDataCheck = 5000;
 }
 
 // Loop
@@ -92,13 +95,13 @@ void loop()
   #endif
 }
 
-//////////////////// IO OPERATIONS ////////////////////
-
 // Check Data
-// Description: reads analog inputs and stores the values
-//              either onto SD or global vars
+// reads analog inputs into SD or global vars
 void checkAnalogData()
 {
+  #if DEBUG
+    Serial.println("Check Analog");
+  #endif
   // AC current mesurement
   int powerMax = 0;
   int val = 0;
