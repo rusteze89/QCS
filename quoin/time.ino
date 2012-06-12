@@ -23,7 +23,7 @@ void setupTime()
 {
   Wire.begin();             // start i2c
   //setDateTime();          // only use when RTC needs to be set
-  #if DEBUG
+  #if DEBUG_SER
     Serial.println("RTC OK");
   #endif
 }
@@ -74,8 +74,7 @@ void setDateTime(byte dt[7])
 }
  
 // Gets the date and time from the ds1307 and prints result
-void getDateTime(byte rtcDateTime[7])
-{
+void getDateTime(byte rtcDateTime[7]) {
   // Reset the register pointer
   Wire.beginTransmission(RTC_I2C_ADDR);
   Wire.write((byte)0);
@@ -92,25 +91,30 @@ void getDateTime(byte rtcDateTime[7])
     rtcDateTime[i++] = bcdToDec(Wire.read());
 }
 
-// At this time doesn't return anything - just printing to serial
-void getTimeString(char rt[9])
-{
+void getDateTimeString(char dt[13]) {
   byte rtcDateTime[7];
   getDateTime(rtcDateTime);
-  // produce charater array with numbers always 2 chars and
-  // shifted to match ascii chars
-  rt[0] = rtcDateTime[2] / 10 + 48;
-  rt[1] = rtcDateTime[2] % 10 + 48;
-  rt[2] = ':';
-  rt[3] = rtcDateTime[1] / 10 + 48;
-  rt[4] = rtcDateTime[1] % 10 + 48;
-  rt[5] = ':';
-  rt[6] = rtcDateTime[0] / 10 + 48;
-  rt[7] = rtcDateTime[0] % 10 + 48;
-  rt[8] = '\0';
-  #if DEBUG
-    Serial.print("time string: ");
-    Serial.println(rt);
+  getDateTimeString(rtcDateTime, dt);
+}
+
+void getDateTimeString(byte rtcDateTime[7], char dt[13]) {
+  // generate date string (YYMMDDhhmmss)
+  dt[0]  = rtcDateTime[T_YEAR]  / 10 + 48;
+  dt[1]  = rtcDateTime[T_YEAR]  % 10 + 48;
+  dt[2]  = rtcDateTime[T_MONTH] / 10 + 48;
+  dt[3]  = rtcDateTime[T_MONTH] % 10 + 48;
+  dt[4]  = rtcDateTime[T_DAYM]  / 10 + 48;
+  dt[5]  = rtcDateTime[T_DAYM]  % 10 + 48;
+  dt[6]  = rtcDateTime[T_HOUR]  / 10 + 48;
+  dt[7]  = rtcDateTime[T_HOUR]  % 10 + 48;
+  dt[8]  = rtcDateTime[T_MIN]   / 10 + 48;
+  dt[9]  = rtcDateTime[T_MIN]   % 10 + 48;
+  dt[10] = rtcDateTime[T_SEC]   / 10 + 48;
+  dt[11] = rtcDateTime[T_SEC]   % 10 + 48;
+  dt[12] = '\0';
+  #if DEBUG_SER
+    Serial.print("datetime string: ");
+    Serial.println(dt);
   #endif
 }
 

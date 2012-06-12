@@ -16,12 +16,15 @@ unsigned long   webTimeout;
 // Setup Web
 // performs setup operations for ethernet and web
 void setupWeb() {
+  #if DEBUG_SER
+    Serial.print("WEB");
+  #endif
   byte mac[] = { 0xDE,0xAD,0xBE,0xEF,0xFE,0xEF };// mac address
   byte ip[]  = { 59,167,158,82 };       // ip address
   Ethernet.begin(mac, ip);              // start ethernet
   webserver.begin();                    // start web server
-  #if DEBUG
-    Serial.println("WEB OK");
+  #if DEBUG_SER
+    Serial.println(" OK");
   #endif
 }
 
@@ -35,7 +38,7 @@ void webCheck() {
     byte reqIndex = 0;
     while (client.connected()) {
       if (millis() > webTimeout) {
-        #if DEBUG
+        #if DEBUG_SER
           Serial.print(millis());
           Serial.println(" WEB TIMEOUT");
         #endif
@@ -46,13 +49,12 @@ void webCheck() {
       if (client.available()) {
         char c = client.read();
         // Process Request
-        if (reqIndex < 50) {
+        if (reqIndex < 49)
           request[reqIndex++] = c;
-        }
 
         // Generate Response
         if (c == '\n') {
-          #if DEBUG
+          #if DEBUG_SER
             Serial.print("web request: ");
             Serial.print(request);
           #endif
@@ -75,11 +77,11 @@ void webCheck() {
 // Check SD
 // checks if a particular file or list was requested
 byte webCheckRequest(char request[]) {
-  if (strstr(request, "r=r1") >= 0) {
+  if (strstr(request, "?r=r1&") >= 0) {
     toggle(PIN_RELAY1);
     return 1; // 1 to indicate output 1
   }
-  if (strstr(request, "r=r2") >= 0) {
+  if (strstr(request, "?r=r2&") >= 0) {
     toggle(PIN_RELAY2);
     return 2; // 2 to indicate output 2
   }
@@ -104,54 +106,78 @@ void webPrintHead() {
 void webPrintCallback() {
   //callback({dt:'23:59:59 31/12/2012',
   //  h0:[],h1:[],h2:[],r1:0,r2:1,m:547,p:133,run:32.1});
-  client.print("callback({v:");
-  client.print(VERSION);
+  client.print("callback({v:");             // print start of callback
+  client.print(VERSION);                    // print code version number
 
   // print history
-  char timeString[9];
-  getTimeString(timeString);
-  client.print(",dt:'");
-  client.print(timeString);
-  client.print("'");
-  for (byte i = 0; i < DATA_INPUTS; i++) {
+  #if RTC_EN                                // if the real time clock is on
+    char datetimeString[13];
+    getDateTimeString(datetimeString);      // get the time
+    client.print(",dt:'");                  // and send it as a string
+    byte i = 6;                             // the element where the time starts
+    while (i < 12) {                        // the end of the time string
+      client.print(datetimeString[i++]);
+      client.print(datetimeString[i++]);
+      if (i < 11) {                         // if it's not up to the secs
+        client.print(":");                  // print time seperator
+      }
+    }
+    client.print("'");                      // print end quotation
+  #else
+    client.print(",dt:'N/A'");              // print not available
+  #endif
+  for (byte i = 0; i < DATA_INPUTS; i++) {  // print of data
     client.print(",h");
     client.print(i);
     client.print(":[");
-    #if DATA_SET > 1
-    byte j = (dataIndex + 1) % DATA_SET;
-      while(j != dataIndex) {
-        client.print(data[i][j]);
-        client.print(",");
+    #if DATA_SET > 1                        // if there's a data set
+    byte j = (dataIndex + 1) % DATA_SET;    // start at the oldest data point
+      while(j != dataIndex) {               // and print all until reaching
+        client.print(data[i][j]);           // the newest data point
+        client.print(",");                  // with commas to separate values
         j = (j + 1) % DATA_SET;
       }
       client.print(data[i][j]);
-    #else
-      client.print(data[i][dataIndex]);
-    #endif
+    #else                                   // if no data set
+      client.print(data[i][dataIndex]);     // then no need to loop
+    #endif                                  // so I added a small optimisation
     client.print("]");
   }
 
-  // print relay states
-  client.print(",r1:");
+  client.print(",r1:");                     // print relay 1's output state
   client.print(digitalRead(PIN_RELAY1));
-  client.print(",r2:");
+  client.print(",r2:");                     // print relay 2's output state
   client.print(digitalRead(PIN_RELAY2));
 
-  // print debug info if enabled
-  #if DEBUG_WEB
-    client.print(",debug:'Page:");
-    client.print(time);
+  #if DEBUG_WEB                             // print debug info if enabled
+    client.print(",debug:'PageGen:");       // print debug
+    client.print(millis() - (webTimeout - WEB_TIMEOUT));//print page gen time
     client.print("ms Runtime:");
-    client.print((float)millis()/60000);
-    client.print("mins");
-    #if DEBUG_MEM
-      client.print(" Free Mem:");
-      client.print(memoryTest());
-      client.print("bytes free");
+    webTimeout = millis();
+    client.print(webTimeout / 3600000);     // print runtime hours
+    client.print("h");
+    client.print(webTimeout / 60000 % 60);  // print runtime mins
+    client.print("m");
+    #if SD_EN                               // print SD error code
+      if (sd_error_code)                    // if one exists
+      {
+        client.print(" SDerror:");
+        client.print(sd_error_code);
+        #if RTC_EN
+          client.print(" ");
+          getDateTimeString(sd_error_dt, datetimeString);
+          client.print(datetimeString);
+        #endif
+      }
     #endif
-    client.print("'");
+    #if DEBUG_MEM
+      client.print(" FreeMem:");
+      client.print(memoryTest());           // print free memory
+      client.print("b");
+    #endif
+    client.print("'");                      // print end of debug string
   #endif
-  client.print("});");
+  client.println("});");                    // print end of callback
 }
 
 // Web Print File
@@ -164,13 +190,6 @@ void webPrintFile(char filename[]) {
       while (dataFile.available() && x < 30000) {
         client.write(dataFile.read());
         x++;
-        #if DEBUG
-        if (x % 1000 == 0) {
-          Serial.print(x);
-          Serial.write(' ');
-          Serial.println(memoryTest());
-        }
-        #endif
       }
       dataFile.close();
     }
