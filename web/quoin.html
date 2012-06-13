@@ -16,7 +16,7 @@
     <div class="container">
       <a class="brand" href="javascript:window.location.reload()">Quoin Control System</a>
       <ul class="nav">
-        <li><a href="http://59.167.158.114/mobile.htm/">Security Camera</a></li>
+        <li><a href="http://59.167.158.114/mobile.htm">Security Camera</a></li>
       </ul>
     </div>
   </div>
@@ -26,17 +26,9 @@
 </div>
 <div class="container" style="display:none">
   <p>
-    <span class="r1">
-      <a class="on toggle btn btn-success">Inverter - On</a>
-      <a class="off toggle btn btn-danger">Inverter - Off</a>
-      <a class="manual disabled toggle btn btn-inverse">Inverter - Manual</a>
-    </span>
-    <span class="r2">
-      <a class="on toggle btn btn-success">Garden Pump - On</a>
-      <a class="off toggle btn btn-danger">Garden Pump - Off</a>
-    </span>
+    <a id="r1" class="btn">Inverter - <span></span></a>
+    <a id="r2" class="btn">Garden Pump - <span></span></a>
   </p>
-  <p id="debug"></p>
 
   <table class="table table-striped">
     <thead>
@@ -61,7 +53,11 @@
   var ARDUINO_URI = 'http://59.167.158.82/';
   var chart;
 
-  $('.toggle').hide();
+  function button(id, context) {
+    if (context[id]==-1) $('#'+id).attr('class', 'btn btn-inverse disabled').find('span').text('Manual');
+    if (context[id]==0) $('#'+id).attr('class', 'btn btn-danger').find('span').text('Off');
+    if (context[id]==1) $('#'+id).attr('class', 'btn btn-success').find('span').text('On');
+  }
 
   function scale(num) {return num/100;}
   function callback(context) {
@@ -77,9 +73,9 @@
     context.b = context.h1.slice(-1);
 
     // Display data
-    $.each(context, function(key, value) {
-      $('#'+key).text(value);
-    });
+    $('#dt').text(context.dt);
+    $('#ac').text(context.ac);
+    $('#b').text(context.b);
 
     // Render charts
     if (chart && chart.destroy) chart.destroy();
@@ -97,20 +93,14 @@
     });
     $('tspan:contains(Highcharts.com)').remove();
 
-    // Relays
-    $('.toggle').hide(); // Hide buttons
-    $('.on, .off').removeClass('disabled');
+    // Toggles
+    button('r1', context);
+    button('r2', context);
 
-    // Show appropriate button for each toggle
-    $.each(['r1', 'r2'], function(i, relay) {
-      var x = context[relay];
-      $('.'+relay).find('.'+(x==-1 ? 'manual' : (x==0 ? 'off' : 'on'))).show();;
-    });
-
-    // Respond to toggle
-    $('a.toggle:not(.disabled)').on('click', function() {
-      $('.toggle').addClass('disabled').off('click');
-      $.getScript(ARDUINO_URI+'?r='+$(this).parent().attr('class'));
+    $('#r1,#r2').on('click', function() {
+      if ($(this).is('.disabled')) return;
+      $('.btn').addClass('disabled');
+      $.getScript(ARDUINO_URI+'?r='+$(this).attr('id'));
     });
   }
 

@@ -77,11 +77,11 @@ void webCheck() {
 // Check SD
 // checks if a particular file or list was requested
 byte webCheckRequest(char request[]) {
-  if (strstr(request, "?r=r1&") >= 0) {
+  if (strstr(request, "r=r1") != NULL) {
     toggle(PIN_RELAY1);
     return 1; // 1 to indicate output 1
   }
-  if (strstr(request, "?r=r2&") >= 0) {
+  if (strstr(request, "r=r2") != NULL) {
     toggle(PIN_RELAY2);
     return 2; // 2 to indicate output 2
   }
