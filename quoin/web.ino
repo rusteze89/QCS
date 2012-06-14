@@ -20,8 +20,7 @@ void setupWeb() {
     Serial.print("WEB");
   #endif
   byte mac[] = { 0xDE,0xAD,0xBE,0xEF,0xFE,0xEF };// mac address
-  byte ip[]  = { 59,167,158,82 };       // ip address
-  Ethernet.begin(mac, ip);              // start ethernet
+  Ethernet.begin(mac);                  // start ethernet with DHCP
   webserver.begin();                    // start web server
   #if DEBUG_SER
     Serial.println(" OK");
@@ -58,7 +57,7 @@ void webCheck() {
             Serial.print("web request: ");
             Serial.print(request);
           #endif
-          byte web_response = webCheckRequest(request);
+          webCheckRequest(request);
 
           // print out the response
           webPrintHead();
@@ -76,21 +75,11 @@ void webCheck() {
 
 // Check SD
 // checks if a particular file or list was requested
-byte webCheckRequest(char request[]) {
-  if (strstr(request, "r=r1") != NULL) {
+void webCheckRequest(char request[]) {
+  if (strstr(request, "r=r1") != NULL)
     toggle(PIN_RELAY1);
-    return 1; // 1 to indicate output 1
-  }
-  if (strstr(request, "r=r2") != NULL) {
+  if (strstr(request, "r=r2") != NULL)
     toggle(PIN_RELAY2);
-    return 2; // 2 to indicate output 2
-  }
-  // if (strstr(request, "alog.txt") >=0) {
-  //     client.println("Printing alog.txt");
-  //     webPrintFile("alog.txt");
-  //   return 0; // 0 for no callback
-  // }
-  return 255;
 }
 
 // Web Print Head
@@ -161,11 +150,11 @@ void webPrintCallback() {
     #if SD_EN                               // print SD error code
       if (sd_error_code)                    // if one exists
       {
-        client.print(" SDerror:");
+        client.print(" SD:");
         client.print(sd_error_code);
         #if RTC_EN
           client.print(" ");
-          getDateTimeString(sd_error_dt, datetimeString);
+          getDateTimeString(datetimeString, sd_error_dt);
           client.print(datetimeString);
         #endif
       }
@@ -178,26 +167,6 @@ void webPrintCallback() {
     client.print("'");                      // print end of debug string
   #endif
   client.println("});");                    // print end of callback
-}
-
-// Web Print File
-// dumps all the data from a file on the SD card to web output
-void webPrintFile(char filename[]) {
-  #if SD_EN
-    File dataFile = SD.open(filename);
-    if (dataFile) {
-      int x = 0;
-      while (dataFile.available() && x < 30000) {
-        client.write(dataFile.read());
-        x++;
-      }
-      dataFile.close();
-    }
-    else
-      client.print("Could not open file");
-  #else
-    client.print("SD card not enabled");
-  #endif
 }
 
 #endif
