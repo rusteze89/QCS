@@ -94,10 +94,14 @@ void getDateTime(byte rtcDateTime[7]) {
 void getDateTimeString(char dt[13]) {
   byte rtcDateTime[7];
   getDateTime(rtcDateTime);
-  getDateTimeString(rtcDateTime, dt);
+  getDateTimeString(dt, rtcDateTime);
+  #if DEBUG_SER
+    Serial.print("getDateTimeString(byte[7]) = ");
+    Serial.print(dt);
+  #endif
 }
 
-void getDateTimeString(byte rtcDateTime[7], char dt[13]) {
+void getDateTimeString(char dt[13], byte rtcDateTime[7]) {
   // generate date string (YYMMDDhhmmss)
   dt[0]  = rtcDateTime[T_YEAR]  / 10 + 48;
   dt[1]  = rtcDateTime[T_YEAR]  % 10 + 48;
