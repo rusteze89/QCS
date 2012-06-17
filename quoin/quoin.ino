@@ -20,6 +20,7 @@
 // Functionality Switches
 #define EN_SD         1     // enables SD card storage/retrieval of history
 #define EN_RTC        1     // enables RTC time functions
+#define EN_COSM       0     // enables Cosm logging functions
 #define EN_WEB        1     // enables web output functions
 
 // Debugger enables
@@ -43,6 +44,7 @@
 // DATA_SET will need to be reduced if debugging on serial
 // due to the extra ram requirements of running the serial library
 
+byte  cosmFlag;
 byte  dataIndex;
 short dAvgIndex;
 short data[DATA_INPUTS][DATA_SET];
@@ -70,6 +72,9 @@ void setup()
   #if EN_WEB    // setup ethernet and web
     setupWeb();
   #endif
+  #if EN_COSM   // setup cosm.com data logging
+    setupCosm();
+  #endif
 
   // set outputs
   for (int i=0; i<8; i++)
@@ -95,6 +100,10 @@ void loop()
   // if web output is enabled, respond to any web requests
   #if EN_WEB
     webCheck();
+  #endif
+
+  #if EN_COSM
+    cosmConCheck();
   #endif
 }
 
@@ -131,6 +140,9 @@ void checkAnalogData()
       #if EN_SD
         writeSDanalog();
       #endif
+      #if EN_COSM
+        cosmFlag = 1;
+      #endif
     }
     #if DEBUG_SER
      else {
@@ -145,6 +157,9 @@ void checkAnalogData()
     data[APIN_BATTERY][dataIndex] = map(analogRead(APIN_BATTERY), 0, 1024, 0, 1500);
     #if EN_SD
       writeSDanalog();
+    #endif
+    #if EN_COSM
+      cosmFlag = 1;
     #endif
     #if DEBUG_SER
       Serial.println(dataIndex);
