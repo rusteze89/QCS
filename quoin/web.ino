@@ -2,7 +2,7 @@
  * web.ino
  * module for printing data to the web interface
  */
-#if WEB_EN
+#if EN_WEB
 
 #include <Ethernet.h>
 #include <utility/w5100.h>
@@ -23,7 +23,7 @@ void setupWeb() {
   Ethernet.begin(mac);                  // start ethernet with DHCP
   webserver.begin();                    // start web server
   #if DEBUG_SER
-    Serial.println(" OK");
+    Serial.println("  OK");
   #endif
 }
 
@@ -99,7 +99,7 @@ void webPrintCallback() {
   client.print(VERSION);                    // print code version number
 
   // print history
-  #if RTC_EN                                // if the real time clock is on
+  #if EN_RTC                                // if the real time clock is on
     char datetimeString[13];
     getDateTimeString(datetimeString);      // get the time
     client.print(",dt:'");                  // and send it as a string
@@ -147,12 +147,12 @@ void webPrintCallback() {
     client.print("h");
     client.print(webTimeout / 60000 % 60);  // print runtime mins
     client.print("m");
-    #if SD_EN                               // print SD error code
+    #if EN_SD                               // print SD error code
       if (sd_error_code)                    // if one exists
       {
         client.print(" SD:");
         client.print(sd_error_code);
-        #if RTC_EN
+        #if EN_RTC
           client.print(" ");
           getDateTimeString(datetimeString, sd_error_dt);
           client.print(datetimeString);

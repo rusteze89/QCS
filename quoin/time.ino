@@ -3,7 +3,7 @@
  * module for setting and getting the time from the real time clock
  * based off 
  */
-#if RTC_EN
+#if EN_RTC
 
 //#include <RTClib.h>
 #include "Wire.h"
@@ -22,9 +22,9 @@
 void setupTime()
 {
   Wire.begin();             // start i2c
-  //setDateTime();          // only use when RTC needs to be set
+  // setDateTime();          // only use when RTC needs to be set
   #if DEBUG_SER
-    Serial.println("RTC OK");
+    Serial.println("RTC  OK");
   #endif
 }
 

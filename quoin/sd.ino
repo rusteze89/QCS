@@ -2,7 +2,7 @@
  * sd.ino
  * module for storing data on an SD card
  */
-#if SD_EN
+#if EN_SD
 
 // make sure these includes are in the main file
 // otherwise you may get compile errors
@@ -14,7 +14,7 @@
 #define SD_ERROR_READ  3  // error code for when SD fails to read
 
 byte sd_error_code;       // var for recording error code
-#if RTC_EN
+#if EN_RTC
   byte sd_error_dt[7];    // var for storing date time of error
 #endif
 
@@ -22,7 +22,7 @@ byte sd_error_code;       // var for recording error code
 // performs setup operations for SD card
 void setupSD() {
   #if DEBUG_SER
-    Serial.print("SD ");
+    Serial.print("SD");
   #endif
   // make sure that the default chip select pin is set to
   // output, even if you don't use it:
@@ -34,21 +34,21 @@ void setupSD() {
   while (!SD.begin(PIN_SD) && sdtry < 3) {
     sdtry++;
     #if DEBUG_SER
-      Serial.print(" Fail ");
+      Serial.print(" Fail");
       Serial.print(sdtry);
     #endif
     delay(250);
     if (sdtry == 3)
     {
       sd_error_code = SD_ERROR_START;
-      #if RTC_EN
+      #if EN_RTC
         getDateTime(sd_error_dt);
       #endif
     }
   }
   #if DEBUG_SER
     if (sdtry == 0)
-      Serial.println(" OK");
+      Serial.println("   OK");
   #endif
 }
 
@@ -56,10 +56,10 @@ void setupSD() {
 // Not functional at the moment
 void readSDanalog() {
   #if DEBUG_SER
-    Serial.print("read SD ana.log...");
+    Serial.print("read SD hist.csv...");
   #endif
 
-  File sd = SD.open("ana.log", FILE_READ);  // open analog log file
+  File sd = SD.open("hist.csv", FILE_READ);  // open analog log file
 
   if (sd) {
     #if DEBUG_SER
@@ -70,7 +70,7 @@ void readSDanalog() {
   else
   {
     sd_error_code = SD_ERROR_READ;
-    #if RTC_EN
+    #if EN_RTC
       getDateTime(sd_error_dt);
     #endif
     #if DEBUG_SER
@@ -87,14 +87,14 @@ void writeSDanalog() {
   if (sd_error_code == 0)
   {
     #if DEBUG_SER
-      Serial.print("\nwrite SD ana.log...");
+      Serial.print("\nwrite SD hist.csv...");
     #endif
     // open the analog log file
 //### maybe change to always open with flush() after write
-    File sd = SD.open("ana.log", FILE_WRITE);
+    File sd = SD.open("hist.csv", FILE_WRITE);
     // if the file is available, write data
     if (sd) {                                 // if the file is open
-      #if RTC_EN                              // print the time
+      #if EN_RTC                              // print the time
         char dt[13];
         getDateTimeString(dt);
         sd.print(dt);
@@ -114,7 +114,7 @@ void writeSDanalog() {
     }
     else {                                    // otherwise the file isn't open
       sd_error_code = SD_ERROR_WRITE;         // so record the error
-      #if RTC_EN
+      #if EN_RTC
         getDateTime(sd_error_dt);
       #endif
       #if DEBUG_SER

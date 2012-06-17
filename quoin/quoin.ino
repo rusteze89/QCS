@@ -18,9 +18,9 @@
 #define VERSION       0.31  // somewhat printing to SD
 
 // Functionality Switches
-#define SD_EN         1     // enables SD card storage/retrieval of history
-#define RTC_EN        1     // enables RTC time functions
-#define WEB_EN        1     // enables web output functions
+#define EN_SD         1     // enables SD card storage/retrieval of history
+#define EN_RTC        1     // enables RTC time functions
+#define EN_WEB        1     // enables web output functions
 
 // Debugger enables
 #define DEBUG_SER     0     // debug operation by dumping to serial
@@ -58,15 +58,16 @@ void setup()
     Serial.begin(115200);   // start serial for Debugging
     delay(1);
     Serial.println("\n\nQuoin Control System");
+    delay(5000);
   #endif
 
-  #if RTC_EN   // setup the real time clock
+  #if EN_RTC   // setup the real time clock
     setupTime();
   #endif
-  #if SD_EN     // setup the sd card
+  #if EN_SD     // setup the sd card
     setupSD();
   #endif
-  #if WEB_EN    // setup ethernet and web
+  #if EN_WEB    // setup ethernet and web
     setupWeb();
   #endif
 
@@ -74,10 +75,10 @@ void setup()
   for (int i=0; i<8; i++)
     pinMode(i, OUTPUT);
   #if DEBUG_SER
-    Serial.println("initialization complete");
+    Serial.println("init complete");
   #endif
 
-  nextDataCheck = millis() % 1000 + 2000;
+  nextDataCheck = millis() + millis() / 1000 * 1000 + 2000;
 }
 
 // Loop
@@ -92,7 +93,7 @@ void loop()
     checkAnalogData();
   }
   // if web output is enabled, respond to any web requests
-  #if WEB_EN
+  #if EN_WEB
     webCheck();
   #endif
 }
@@ -102,7 +103,7 @@ void loop()
 void checkAnalogData()
 {
   #if DEBUG_SER
-    Serial.print("Check Analog");
+    Serial.print("Check Analog ");
   #endif
   // AC current mesurement
   int powerMax = 0;
@@ -127,14 +128,27 @@ void checkAnalogData()
         data[i][dataIndex] = dAvg[i] / DATA_AVG_SET;// divide by the number of points
         dAvg[i] = 0;                            // reset average for next round
       }
+      #if EN_SD
+        writeSDanalog();
+      #endif
     }
+    #if DEBUG_SER
+     else {
+      Serial.print(dataIndex);
+      Serial.print(".");
+      Serial.println(dAvgIndex);
+     }
+    #endif
   #else                                         // not averaging data
     dataIndex = (dataIndex + 1) % DATA_SET;     // increment the data index
     data[APIN_ACPOWER][dataIndex] = powerMax;   // record the data point
     data[APIN_BATTERY][dataIndex] = map(analogRead(APIN_BATTERY), 0, 1024, 0, 1500);
-  #endif
-  #if SD_EN
-    writeSDanalog();
+    #if EN_SD
+      writeSDanalog();
+    #endif
+    #if DEBUG_SER
+      Serial.println(dataIndex);
+    #endif
   #endif
 }
 
