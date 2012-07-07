@@ -20,7 +20,8 @@ void setupWeb() {
     Serial.print("WEB");
   #endif
   byte mac[] = { 0xDE,0xAD,0xBE,0xEF,0xFE,0xEF };// mac address
-  Ethernet.begin(mac);                  // start ethernet with DHCP
+  byte ip[]  = { 192, 168, 88, 2 };     // ip address
+  Ethernet.begin(mac, ip);              // start ethernet
   webserver.begin();                    // start web server
   #if DEBUG_SER
     Serial.println("  OK");
