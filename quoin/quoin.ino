@@ -15,12 +15,11 @@
 
 #include <avr/pgmspace.h>
 
-#define VERSION       0.31  // somewhat printing to SD
+#define VERSION       0.32  // Working over 3g with VPN (from router)
 
 // Functionality Switches
 #define EN_SD         1     // enables SD card storage/retrieval of history
 #define EN_RTC        1     // enables RTC time functions
-#define EN_COSM       0     // enables Cosm logging functions
 #define EN_WEB        1     // enables web output functions
 
 // Debugger enables
@@ -39,12 +38,11 @@
 // Constants for analog data
 #define DATA_INPUTS   2     // number of inputs being collected
 #define DATA_FREQ     1000  // 1s      - time between data collections
-#define DATA_AVG_SET  20    // 900/15m - #reads averaged into data point
-#define DATA_SET      30    // 96/24h  - #buffered data points
+#define DATA_AVG_SET  900    // 900/15m - #reads averaged into data point
+#define DATA_SET      96    // 96/24h  - #buffered data points
 // DATA_SET will need to be reduced if debugging on serial
 // due to the extra ram requirements of running the serial library
 
-byte  cosmFlag;
 byte  dataIndex;
 short dAvgIndex;
 short data[DATA_INPUTS][DATA_SET];
@@ -71,9 +69,6 @@ void setup()
   #endif
   #if EN_WEB    // setup ethernet and web
     setupWeb();
-  #endif
-  #if EN_COSM   // setup cosm.com data logging
-    setupCosm();
   #endif
 
   // set outputs

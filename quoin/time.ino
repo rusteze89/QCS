@@ -22,7 +22,8 @@
 void setupTime()
 {
   Wire.begin();             // start i2c
-  // setDateTime();          // only use when RTC needs to be set
+  //byte t[] = {0,23,19,0,12,7,12}; // s,m,h,dw,dm,m,y
+  //setDateTime(t);         // only use when RTC needs to be set
   #if DEBUG_SER
     Serial.println("RTC  OK");
   #endif
@@ -45,7 +46,8 @@ byte bcdToDec(byte val)
 // 1) Sets the date and time on the ds1307
 // 2) Starts the clock
 // 3) Sets hour mode to 24 hour clock
-// Assumes you're passing in valid numbers, Probably need to put in checks for valid numbers.
+// Assumes you're passing in valid numbers,
+// Probably need to put in checks for valid numbers.
  
 void setDateTime()                
 {
@@ -86,7 +88,7 @@ void getDateTime(byte rtcDateTime[7]) {
   byte i = 0;
   rtcDateTime[i++] = bcdToDec(Wire.read() & 0x7f);
   rtcDateTime[i++] = bcdToDec(Wire.read());
-  rtcDateTime[i++] = bcdToDec(Wire.read() & 0x3f);  // Need to change this if 12 hour am/pm
+  rtcDateTime[i++] = bcdToDec(Wire.read() & 0x3f);  // Change for 12 hour am/pm
   while (i < 7)
     rtcDateTime[i++] = bcdToDec(Wire.read());
 }
