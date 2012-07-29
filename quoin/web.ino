@@ -147,7 +147,14 @@ void webPrintCallback() {
     client.print(webTimeout / 3600000);     // print runtime hours
     client.print("h");
     client.print(webTimeout / 60000 % 60);  // print runtime mins
-    client.print("m");
+    client.print("m Inputs:");
+    client.print(DATA_INPUTS);              // print #inputs being measured
+    client.print(" DataFreq:");
+    client.print(DATA_FREQ);                // time between data collections
+    client.print(" DataAvgSet:");
+    client.print(DATA_AVG_SET);             // #reads averaged into data point
+    client.print(" DataSet:");
+    client.print(DATA_SET);                 // # data points in chart
     #if EN_SD                               // print SD error code
       if (sd_error_code)                    // if one exists
       {
