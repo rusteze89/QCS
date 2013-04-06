@@ -3,8 +3,6 @@
  * base code for quoin control system
  * 
  * Modules:
- * * io.ino     contains functions for input/output
- * * time.ino   contains functions for communicating with RTC chip
  * * web.ino    contains functions to process and send jquery callback
  *
  * To Do:
@@ -18,8 +16,6 @@
 #define VERSION       1.0   // Working over 3g with VPN (from router)
 
 // Functionality Switches
-#define EN_SD         1     // enables SD card storage/retrieval of history
-#define EN_RTC        1     // enables RTC time functions
 #define EN_WEB        1     // enables web output functions
 
 // Debugger enables
@@ -28,7 +24,7 @@
 #define DEBUG_WEB     1     // sends debug information to the web front end
 
 // General IO Pins used
-#define APIN_ACPOWER  0     // analog pin for AC amps reading off inverter
+#define APIN_ACPOWER  0     // analog pin for AC amps reading from inverter
 #define APIN_BATTERY  1     // analog pin for battery voltage reading
 #define APIN_SDA      5     // i2c SDA pin (analog 5)
 #define APIN_SCL      6     // i2c SCL pin (analog 6)
@@ -38,8 +34,8 @@
 // Constants for analog data
 #define DATA_INPUTS   2     // number of inputs being collected
 #define DATA_FREQ     1000  //  1s - time between data collections
-#define DATA_AVG_SET  900   // 15m - #reads averaged into data point
-#define DATA_SET      96    // 24h - #buffered data points
+#define DATA_AVG_SET  600   // 10m - #reads averaged into data point
+#define DATA_SET      144   // 24h - #buffered data points
 // DATA_SET will need to be reduced if debugging on serial
 // due to the extra ram requirements of running the serial library
 
@@ -48,7 +44,6 @@ short dataCurrent[DATA_INPUTS];
 short dAvgIndex;
 short data[DATA_INPUTS][DATA_SET];
 unsigned long dAvg[DATA_INPUTS];
-//unsigned long hAvg[DATA_INPUTS]; // hourly average?
 unsigned long nextDataCheck;
 
 // Setup
@@ -62,12 +57,6 @@ void setup()
     delay(5000);
   #endif
 
-  #if EN_RTC   // setup the real time clock
-    setupTime();
-  #endif
-  #if EN_SD     // setup the sd card
-    setupSD();
-  #endif
   #if EN_WEB    // setup ethernet and web
     setupWeb();
   #endif
@@ -118,30 +107,24 @@ void checkAnalogData()
   {
     val = analogRead(APIN_ACPOWER);             // read AC power (pin 0)
     if (val > dataCurrent[APIN_ACPOWER])
-      dataCurrent[APIN_ACPOWER] = val;                           // record the maximum sensor value
+      dataCurrent[APIN_ACPOWER] = val;          // record the maximum sensor value
   }
   #if DEBUG_WEB
     dataCurrent[0] = val;
   #endif
-  #if DATA_AVG_SET > 0                          // if taking average values
-    dAvgIndex = (dAvgIndex + 1) % DATA_AVG_SET; // increment avg index
-    dAvg[APIN_ACPOWER] += dataCurrent[APIN_ACPOWER];             // record data point
+  #if DATA_AVG_SET > 0                              // if taking average values
+    dAvgIndex = (dAvgIndex + 1) % DATA_AVG_SET;     // increment avg index
+    dAvg[APIN_ACPOWER] += dataCurrent[APIN_ACPOWER];// record data point
     dataCurrent[APIN_BATTERY] = analogRead(APIN_BATTERY);
     dAvg[APIN_BATTERY] += dataCurrent[APIN_BATTERY];
     if (dAvgIndex == DATA_AVG_SET - 1)
     {
-      dataIndex = (dataIndex + 1) % DATA_SET;   // increment the data index
+      dataIndex = (dataIndex + 1) % DATA_SET;       // increment the data index
       for (byte i=0; i<DATA_INPUTS; i++)
-      {                                         // go through each input
+      {                                             // go through each input
         data[i][dataIndex] = dAvg[i] / DATA_AVG_SET;// divide by the number of points
-        dAvg[i] = 0;                            // reset average for next round
+        dAvg[i] = 0;                                // reset average for next round
       }
-      #if EN_SD
-        writeSDanalog();
-      #endif
-      #if EN_COSM
-        cosmFlag = 1;
-      #endif
     }
     #if DEBUG_SER
      else {
@@ -150,16 +133,10 @@ void checkAnalogData()
       Serial.println(dAvgIndex);
      }
     #endif
-  #else                                         // not averaging data
-    dataIndex = (dataIndex + 1) % DATA_SET;     // increment the data index
-    data[APIN_ACPOWER][dataIndex] = dataCurrent[APIN_ACPOWER];   // record the data point
+  #else                                             // not averaging data
+    dataIndex = (dataIndex + 1) % DATA_SET;         // increment the data index
+    data[APIN_ACPOWER][dataIndex] = dataCurrent[APIN_ACPOWER];// record the data point
     data[APIN_BATTERY][dataIndex] = analogRead(APIN_BATTERY);
-    #if EN_SD
-      writeSDanalog();
-    #endif
-    #if EN_COSM
-      cosmFlag = 1;
-    #endif
     #if DEBUG_SER
       Serial.println(dataIndex);
     #endif

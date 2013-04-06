@@ -5,13 +5,15 @@
 #if EN_WEB
 
 #include <Ethernet.h>
+#include <SPI.h>
 #include <utility/w5100.h>
 
-#define WEB_TIMEOUT   5000  // ms before web client is booted off
+#define WEB_TIMEOUT   5000      // ms before web client is booted off
 
 EthernetServer  webserver(80);
-EthernetClient  client;  // global for simpler memory management
-unsigned long   webTimeout;
+EthernetClient  client;         // global for simpler memory management
+unsigned long   webTimeout;     // keep track of how long the webserver
+byte            dataIndexLast;  // the dataIndex value when data was last requested
 
 // Setup Web
 // performs setup operations for ethernet and web
@@ -20,12 +22,13 @@ void setupWeb() {
     Serial.print("WEB");
   #endif
   byte mac[] = { 0xDE,0xAD,0xBE,0xEF,0xFE,0xEF };// mac address
-  byte ip[]  = { 192, 168, 88, 2 };     // ip address
-  Ethernet.begin(mac, ip);              // start ethernet
+  byte ip[]  = { 192,168,88,2 };        // ip address
+  Ethernet.begin(mac,ip);               // start ethernet
   webserver.begin();                    // start web server
   #if DEBUG_SER
     Serial.println("  OK");
   #endif
+  dataIndexLast = 0;
 }
 
 // Web Check
@@ -100,32 +103,16 @@ void webPrintCallback() {
   client.print(VERSION);                    // print code version number
 
   // print history
-  #if EN_RTC                                // if the real time clock is on
-    char datetimeString[13];
-    getDateTimeString(datetimeString);      // get the time
-    client.print(",dt:'");                  // and send it as a string
-    byte i = 6;                             // the element where the time starts
-    while (i < 12) {                        // the end of the time string
-      client.print(datetimeString[i++]);
-      client.print(datetimeString[i++]);
-      if (i < 11) {                         // if it's not up to the secs
-        client.print(":");                  // print time seperator
-      }
-    }
-    client.print("'");                      // print end quotation
-  #else
-    client.print(",dt:'N/A'");              // print not available
-  #endif
-  for (byte i = 0; i < DATA_INPUTS; i++) {  // print of data
+  for (byte i = 0; i < DATA_INPUTS; i++) {  // print off data
     client.print(",h");
     client.print(i);
     client.print(":[");
     #if DATA_SET > 1                        // if there's a data set
-    byte j = (dataIndex + 1) % DATA_SET;    // start at the oldest data point
+      byte j = dataIndexLast;               // start at the last data point sent
       while(j != dataIndex) {               // and print all until reaching
         client.print(data[i][j]);           // the newest data point
         client.print(",");                  // with commas to separate values
-        j = (j + 1) % DATA_SET;
+        j = (j + 1) % DATA_SET;             // increment around the dataset
       }
       client.print(data[i][j]);
     #else                                   // if no data set
@@ -133,6 +120,7 @@ void webPrintCallback() {
     #endif                                  // so I added a small optimisation
     client.print("]");
   }
+  dataIndexLast = dataIndex;                // remember the last point sent
 
   client.print(",r1:");                     // print relay 1's output state
   client.print(digitalRead(PIN_RELAY1));
