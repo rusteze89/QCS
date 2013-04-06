@@ -16,3 +16,6 @@ Quoin folder contains arduino code segmented into primary modules
 ## Web Interface
 Web folder contains web front end to load content from arduino and display it nicely  
 This was written by Kanshii and only tweaked by me
+
+## Setup
+in web/index.html replace my.device.net with the public address/ip that forwards to your device on port 80

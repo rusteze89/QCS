@@ -15,7 +15,7 @@
 
 #include <avr/pgmspace.h>
 
-#define VERSION       0.32  // Working over 3g with VPN (from router)
+#define VERSION       1.0   // Working over 3g with VPN (from router)
 
 // Functionality Switches
 #define EN_SD         1     // enables SD card storage/retrieval of history
