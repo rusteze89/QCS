@@ -59,7 +59,7 @@
     if (context[id]==1) $('#'+id).attr('class', 'btn btn-success').find('span').text('On');
   }
 
-  function scale(num) {return num/100;}
+  function scale(num) {return num/51;} // 0-20v scale out of 1024 resolution
   function callback(context) {
     // Hide loading message and show data
     $('#loading').remove();

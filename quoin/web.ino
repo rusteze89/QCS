@@ -155,13 +155,17 @@ void webPrintCallback() {
     client.print(DATA_AVG_SET);             // #reads averaged into data point
     client.print(" DataSet:");
     client.print(DATA_SET);                 // # data points in chart
+    client.print(" CurrentAC:");
+    client.print(dataCurrent[APIN_ACPOWER]);// current value of the AC Power pin
+    client.print(" CurrentBat:");
+    client.print(dataCurrent[APIN_BATTERY]);// current value of the battery pin
     #if EN_SD                               // print SD error code
       if (sd_error_code)                    // if one exists
       {
         client.print(" SD:");
         client.print(sd_error_code);
         #if EN_RTC
-          client.print(" ");
+          client.print(" RTC:");
           getDateTimeString(datetimeString, sd_error_dt);
           client.print(datetimeString);
         #endif

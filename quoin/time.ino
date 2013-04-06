@@ -22,8 +22,8 @@
 void setupTime()
 {
   Wire.begin();             // start i2c
-  //byte t[] = {0,23,19,0,12,7,12}; // s,m,h,dw,dm,m,y
-  //setDateTime(t);         // only use when RTC needs to be set
+//  byte t[] = {0,9,14,0,2,9,12}; // s,m,h,dw,dm,m,y
+//  setDateTime(t);         // only use when RTC needs to be set
   #if DEBUG_SER
     Serial.println("RTC  OK");
   #endif

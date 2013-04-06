@@ -44,6 +44,7 @@
 // due to the extra ram requirements of running the serial library
 
 byte  dataIndex;
+short dataCurrent[DATA_INPUTS];
 short dAvgIndex;
 short data[DATA_INPUTS][DATA_SET];
 unsigned long dAvg[DATA_INPUTS];
@@ -110,20 +111,23 @@ void checkAnalogData()
     Serial.print("Check Analog ");
   #endif
   // AC current mesurement
-  int powerMax = 0;
+  dataCurrent[APIN_ACPOWER] = 0;
   int val = 0;
   unsigned long tmeasure = millis() + 100;
   while (millis() < tmeasure)
   {
     val = analogRead(APIN_ACPOWER);             // read AC power (pin 0)
-    if (val > powerMax)
-      powerMax = val;                           // record the maximum sensor value
+    if (val > dataCurrent[APIN_ACPOWER])
+      dataCurrent[APIN_ACPOWER] = val;                           // record the maximum sensor value
   }
-
+  #if DEBUG_WEB
+    dataCurrent[0] = val;
+  #endif
   #if DATA_AVG_SET > 0                          // if taking average values
     dAvgIndex = (dAvgIndex + 1) % DATA_AVG_SET; // increment avg index
-    dAvg[APIN_ACPOWER] += powerMax;             // record data point
-    dAvg[APIN_BATTERY] += map(analogRead(APIN_BATTERY), 0, 1024, 0, 1500);
+    dAvg[APIN_ACPOWER] += dataCurrent[APIN_ACPOWER];             // record data point
+    dataCurrent[APIN_BATTERY] = analogRead(APIN_BATTERY);
+    dAvg[APIN_BATTERY] += dataCurrent[APIN_BATTERY];
     if (dAvgIndex == DATA_AVG_SET - 1)
     {
       dataIndex = (dataIndex + 1) % DATA_SET;   // increment the data index
@@ -148,8 +152,8 @@ void checkAnalogData()
     #endif
   #else                                         // not averaging data
     dataIndex = (dataIndex + 1) % DATA_SET;     // increment the data index
-    data[APIN_ACPOWER][dataIndex] = powerMax;   // record the data point
-    data[APIN_BATTERY][dataIndex] = map(analogRead(APIN_BATTERY), 0, 1024, 0, 1500);
+    data[APIN_ACPOWER][dataIndex] = dataCurrent[APIN_ACPOWER];   // record the data point
+    data[APIN_BATTERY][dataIndex] = analogRead(APIN_BATTERY);
     #if EN_SD
       writeSDanalog();
     #endif
