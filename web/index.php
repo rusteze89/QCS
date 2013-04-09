@@ -1,3 +1,8 @@
+<?php
+  URI_CONTROLLER="http://my.device.net"
+  URI_CAMERA="http://my.device.net/mobile.htm"
+?>
+
 <!doctype html>
 <!-- replace the following with your info -->
 <!-- my.device.net  :  hostname or ip of your device -->
@@ -18,7 +23,7 @@
     <div class="container">
       <a class="brand" href="javascript:window.location.reload()">Control System</a>
       <ul class="nav">
-        <li><a href="http://my.device.net/mobile.htm" target="_blank">Security Camera</a></li>
+        <li><a href="<?$URI_CAMERA?>" target="_blank">Security Camera</a></li>
       </ul>
     </div>
   </div>
@@ -52,7 +57,7 @@
   <div id="chart"></div>
 </div>
 <script>
-  var ARDUINO_URI = 'http://my.device.net/';
+  var ARDUINO_URI = '<?$URI_ARDUINO?>';
   var chart;
 
   function button(id, context) {
