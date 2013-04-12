@@ -33,9 +33,9 @@
 
 // Constants for analog data
 #define DATA_INPUTS   2     // number of inputs being collected
-#define DATA_FREQ     1000  //  1s - time between data collections
-#define DATA_AVG_SET  600   // 10m - #reads averaged into data point
-#define DATA_SET      144   // 24h - #buffered data points
+#define DATA_FREQ     1000  // 1s - time between data collections
+#define DATA_AVG_SET  300   // 5m - #reads averaged into data point
+#define DATA_SET      72    // 6h - #buffered data points
 // DATA_SET will need to be reduced if debugging on serial
 // due to the extra ram requirements of running the serial library
 

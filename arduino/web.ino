@@ -97,76 +97,77 @@ void webPrintHead() {
 // Web Print Callback
 // collects and prints callback response
 void webPrintCallback() {
-  //callback({dt:'23:59:59 31/12/2012',
-  //  h0:[],h1:[],h2:[],r1:0,r2:1,m:547,p:133,run:32.1});
-  client.print("callback({v:");             // print start of callback
-  client.print(VERSION);                    // print code version number
-
-  // print history
+  // print analog data JSON
+  client.print("{\"arduino_analog_data\":[[");
   for (byte i = 0; i < DATA_INPUTS; i++) {  // print off data
-    client.print(",h");
-    client.print(i);
-    client.print(":[");
-    #if DATA_SET > 1                        // if there's a data set
-      byte j = dataIndexLast;               // start at the last data point sent
-      while(j != dataIndex) {               // and print all until reaching
-        client.print(data[i][j]);           // the newest data point
-        client.print(",");                  // with commas to separate values
-        j = (j + 1) % DATA_SET;             // increment around the dataset
-      }
-      client.print(data[i][j]);
-    #else                                   // if no data set
-      client.print(data[i][dataIndex]);     // then no need to loop
-    #endif                                  // so I added a small optimisation
-    client.print("]");
+    byte j = dataIndexLast;                 // start at the last data point sent
+    while(j != dataIndex) {                 // and print all until reaching
+      client.print(data[i][j]);             // the newest data point
+      client.print(",");                    // with commas to separate values
+      j = (j + 1) % DATA_SET;               // increment around the dataset
+    }
+    client.print(data[i][j]);               // print newest data point for that input
+    if (i < DATA_INPUTS -1)
+      client.print("],[");                  // end input and prepare for the next input
   }
+  client.print("]]}\n");                    // end of analog data
   dataIndexLast = dataIndex;                // remember the last point sent
 
-  client.print(",r1:");                     // print relay 1's output state
-  client.print(digitalRead(PIN_RELAY1));
-  client.print(",r2:");                     // print relay 2's output state
-  client.print(digitalRead(PIN_RELAY2));
+  // print current data
+  client.print("{\"current_data\":{");
+  // print current ac 
+  client.print("\n {\"AC\":");
+  client.print(dataCurrent[APIN_ACPOWER]);  // current value of the AC Power pin
+  client.print("},\n");
+  // print current battery voltage
+  client.print(" {\"Battery\":");
+  client.print(dataCurrent[APIN_BATTERY]);  // current value of the battery pin
+  client.print("},\n");
+  // print relay outputs
+  client.print(" {\"relay\":[");
+  client.print(digitalRead(PIN_RELAY1));    // state of relay 1
+  client.print(",");
+  client.print(digitalRead(PIN_RELAY2));    // state of relay 2
+  client.print("]}\n");
+  client.print("}}\n");
 
   #if DEBUG_WEB                             // print debug info if enabled
-    client.print(",debug:'PageGen:");       // print debug
+    client.print("{\"debug\":{");
+    // print page generation time
+    client.print("\n {\"PageGen\":\"");        // print debug
     client.print(millis() - (webTimeout - WEB_TIMEOUT));//print page gen time
-    client.print("ms Runtime:");
-    webTimeout = millis();
-    client.print(webTimeout / 3600000);     // print runtime hours
+    client.print("ms\"");
+    // print runtime
+    webTimeout = millis() / 1000;
+    client.print("},\n {\"Runtime\":\"");
+    client.print(webTimeout / 86400);       // print runtime days
+    client.print("d");
+    client.print(webTimeout / 3600 % 24);   // print runtime hours
     client.print("h");
-    client.print(webTimeout / 60000 % 60);  // print runtime mins
-    client.print("m Inputs:");
+    client.print(webTimeout / 60 % 60);     // print runtime mins
+    client.print("m\"");
+    // print number of inputs
+    client.print("},\n {\"Inputs\":");
     client.print(DATA_INPUTS);              // print #inputs being measured
-    client.print(" DataFreq:");
+    // print data collection frequency
+    client.print("},\n {\"DataFreq\":");
     client.print(DATA_FREQ);                // time between data collections
-    client.print(" DataAvgSet:");
+    // print data index
+    client.print("},\n {\"DataIndex\":");
+    client.print(dataIndex);
+    // print data average set
+    client.print("},\n {\"DataAvgSet\":");
     client.print(DATA_AVG_SET);             // #reads averaged into data point
-    client.print(" DataSet:");
+    // print size of data set
+    client.print("},\n {\"DataSet\":");
     client.print(DATA_SET);                 // # data points in chart
-    client.print(" CurrentAC:");
-    client.print(dataCurrent[APIN_ACPOWER]);// current value of the AC Power pin
-    client.print(" CurrentBat:");
-    client.print(dataCurrent[APIN_BATTERY]);// current value of the battery pin
-    #if EN_SD                               // print SD error code
-      if (sd_error_code)                    // if one exists
-      {
-        client.print(" SD:");
-        client.print(sd_error_code);
-        #if EN_RTC
-          client.print(" RTC:");
-          getDateTimeString(datetimeString, sd_error_dt);
-          client.print(datetimeString);
-        #endif
-      }
-    #endif
     #if DEBUG_MEM
-      client.print(" FreeMem:");
+      client.print("},\n {\"FreeMem\":\"");
       client.print(memoryTest());           // print free memory
-      client.print("b");
+      client.print("b\"");
     #endif
-    client.print("'");                      // print end of debug string
+    client.print("}\n}}\n");                 // print end of debug string
   #endif
-  client.println("});");                    // print end of callback
 }
 
 #endif
