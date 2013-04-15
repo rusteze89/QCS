@@ -40,7 +40,7 @@
 // due to the extra ram requirements of running the serial library
 
 byte  dataIndex;
-short dataCurrent[DATA_INPUTS];
+short dataLive[DATA_INPUTS];
 short dAvgIndex;
 short data[DATA_INPUTS][DATA_SET];
 unsigned long dAvg[DATA_INPUTS];
@@ -99,24 +99,24 @@ void checkAnalogData()
   #if DEBUG_SER
     Serial.print("Check Analog ");
   #endif
-  // AC current mesurement
-  dataCurrent[APIN_ACPOWER] = 0;
+  // AC live mesurement
+  dataLive[APIN_ACPOWER] = 0;
   int val = 0;
   unsigned long tmeasure = millis() + 100;
   while (millis() < tmeasure)
   {
     val = analogRead(APIN_ACPOWER);             // read AC power (pin 0)
-    if (val > dataCurrent[APIN_ACPOWER])
-      dataCurrent[APIN_ACPOWER] = val;          // record the maximum sensor value
+    if (val > dataLive[APIN_ACPOWER])
+      dataLive[APIN_ACPOWER] = val;          // record the maximum sensor value
   }
   #if DEBUG_WEB
-    dataCurrent[0] = val;
+    dataLive[0] = val;
   #endif
   #if DATA_AVG_SET > 0                              // if taking average values
     dAvgIndex = (dAvgIndex + 1) % DATA_AVG_SET;     // increment avg index
-    dAvg[APIN_ACPOWER] += dataCurrent[APIN_ACPOWER];// record data point
-    dataCurrent[APIN_BATTERY] = analogRead(APIN_BATTERY);
-    dAvg[APIN_BATTERY] += dataCurrent[APIN_BATTERY];
+    dAvg[APIN_ACPOWER] += dataLive[APIN_ACPOWER];// record data point
+    dataLive[APIN_BATTERY] = analogRead(APIN_BATTERY);
+    dAvg[APIN_BATTERY] += dataLive[APIN_BATTERY];
     if (dAvgIndex == DATA_AVG_SET - 1)
     {
       dataIndex = (dataIndex + 1) % DATA_SET;       // increment the data index
@@ -135,7 +135,7 @@ void checkAnalogData()
     #endif
   #else                                             // not averaging data
     dataIndex = (dataIndex + 1) % DATA_SET;         // increment the data index
-    data[APIN_ACPOWER][dataIndex] = dataCurrent[APIN_ACPOWER];// record the data point
+    data[APIN_ACPOWER][dataIndex] = dataLive[APIN_ACPOWER];// record the data point
     data[APIN_BATTERY][dataIndex] = analogRead(APIN_BATTERY);
     #if DEBUG_SER
       Serial.println(dataIndex);
