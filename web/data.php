@@ -7,12 +7,14 @@
 	require_once('include.php');
 	date_default_timezone_set('Australia/Brisbane');
 
-	$set = 0;
 	if (isset($_REQUEST["save"]))
 		history_save($controller, $db_serv, $db_user, $db_pass, $db);
 
 	if (isset($_REQUEST["history"]))
-		history_get($db_serv, $db_user, $db_pass, $db);
+		// if ($_REQUEST["history"] == "")
+			history_get($db_serv, $db_user, $db_pass, $db);
+		// else
+		// 	history_get($db_serv, $db_user, $db_pass, $db, $_REQUEST["history"]);
 
 	if (isset($_REQUEST["live"]))
 		live_get($controller);
@@ -39,40 +41,36 @@
 		echo file_get_contents($controller.'?live');
 	}
 
-	function history_get($db_serv, $db_user, $db_pass, $db) {
+	function history_get($db_serv, $db_user, $db_pass, $db, $limit=144) {
 		// connect to MySQL database
 		$con	= mysqli_connect($db_serv, $db_user, $db_pass, $db);
+		$result	= mysqli_query($con, "SELECT * from data ORDER BY dt DESC LIMIT $limit") or die('Database Query Failed');
+		mysqli_close($con);
+		
+		$table=array();
+		$table['cols']=array(
+		        array('label'=>'Time', 'type'=>'string'),
+		        array('label'=>'v_battery', 'type'=>'number'),
+		        array('label'=>'a_inverter', 'type'=>'number')
+		);
+		$rows=array();
 
-		// get history data
-		$result	= mysqli_query($con, "SELECT * from data") or die('Database Query Failed');
-		if(mysqli_num_rows($result)){
-			// echo '{';
-			// // print google charts data headings
-			// echo '"cols": [';
-			// echo '{"label":"DateTime","type":"time"},';
-			// echo '{"label":"v_battery","type":"number"},';
-			// echo '{"label":"a_inverter","type":"number"}';
-			// echo '],';
-			// // print actual data
-			// // echo '"analog_data":[';
-			// echo '"rows":[';
-			echo '{"analog_data":[';
-			$first = true;
-			$row=mysqli_fetch_assoc($result);
-			while($row=mysqli_fetch_row($result)){
-				//  cast results to specific data types
+		while($r=mysqli_fetch_assoc($result)){
+			$temp=array();
+			$date = DateTime::createFromFormat('Y-m-d H:i:s', $r['dt']); // your original DTO
+			$date = $date->format('Y,m,d,H,i,s');
+			preg_match("/\d{4},(\d\d),/", $date,$matches); $matches[1] = $matches[1] -1; $date = preg_replace("/^(\d{4}),(\d\d),/", '$1,' . str_pad($matches[1], 2, "0", STR_PAD_LEFT). ",", $date);
+			$temp[]=array('v' => "Date(" . $date . ")");
+			$temp[]=array('v' => $r['v_battery']);
+			$temp[]=array('v' => $r['a_inverter']);
 
-				if($first) {
-					$first = false;
-				} else {
-					echo ',';
-				}
-				echo json_encode($row);
-			}
-			echo ']}';
-		} else {
-			echo '[]';
+			$rows[]=array('c' => $temp);
 		}
+		$table['rows']=$rows;
+
+		$jsonTable = json_encode($table);
+		//this print statement just for testing
+		print $jsonTable;
 	}
 
 	function history_save($controller, $db_serv, $db_user, $db_pass, $db) {
