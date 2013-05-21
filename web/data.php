@@ -41,17 +41,31 @@
 		echo file_get_contents($controller.'?live');
 	}
 
-	function history_get($db_serv, $db_user, $db_pass, $db, $limit=144) {
+	function history_get($db_serv, $db_user, $db_pass, $db) {
+		$interval = (int)(isset($_REQUEST['interval']) ? $_REQUEST['interval'] : 0);
+		$limit = (int)(isset($_REQUEST['limit']) ? $_REQUEST['limit']: 144);
+
+		$where = '';
+		if ($interval) {
+			$where = "WHERE 
+				DATE_FORMAT(dt, '%i')='00' 
+				AND CONVERT(DATE_FORMAT(dt, '%h'), UNSIGNED INTEGER) % {$interval} = 0
+			";
+		}
+
+		// produce SQL query string
+		$query	= "SELECT * from `data` {$where} ORDER BY `dt` DESC LIMIT {$limit}";
+
 		// connect to MySQL database
 		$con	= mysqli_connect($db_serv, $db_user, $db_pass, $db);
-		$result	= mysqli_query($con, "SELECT * from data ORDER BY dt DESC LIMIT $limit") or die('Database Query Failed');
+		$result	= mysqli_query($con, $query) or die('Database Query Failed');
 		mysqli_close($con);
 		
 		$table=array();
 		$table['cols']=array(
-		        array('label'=>'Time', 'type'=>'string'),
-		        array('label'=>'v_battery', 'type'=>'number'),
-		        array('label'=>'a_inverter', 'type'=>'number')
+		        array('label'=>'Time', 'type'=>'date'),
+		        array('label'=>'v_battery', 'type'=>'number')
+		        // array('label'=>'a_inverter', 'type'=>'number')
 		);
 		$rows=array();
 
@@ -62,7 +76,7 @@
 			preg_match("/\d{4},(\d\d),/", $date,$matches); $matches[1] = $matches[1] -1; $date = preg_replace("/^(\d{4}),(\d\d),/", '$1,' . str_pad($matches[1], 2, "0", STR_PAD_LEFT). ",", $date);
 			$temp[]=array('v' => "Date(" . $date . ")");
 			$temp[]=array('v' => $r['v_battery']);
-			$temp[]=array('v' => $r['a_inverter']);
+			// $temp[]=array('v' => $r['a_inverter']);
 
 			$rows[]=array('c' => $temp);
 		}
