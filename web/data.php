@@ -42,15 +42,19 @@
 	}
 
 	function history_get($db_serv, $db_user, $db_pass, $db) {
-		$interval = (int)(isset($_REQUEST['interval']) ? $_REQUEST['interval'] : 0);
-		$limit = (int)(isset($_REQUEST['limit']) ? $_REQUEST['limit']: 144);
+		
+		$interval = (isset($_REQUEST['interval']) ? $_REQUEST['interval'] : "");
+		if ($interval == "5m") { $interval = 0; }
+		if ($interval == "1h") { $interval = "% 1 = 0"; }
+		if ($interval == "1d") { $interval = "= 0"; }
+
+		$limit = (int)(isset($_REQUEST['limit']) ? $_REQUEST['limit']: 100);
 
 		$where = '';
 		if ($interval) {
 			$where = "WHERE 
 				DATE_FORMAT(dt, '%i')='00' 
-				AND CONVERT(DATE_FORMAT(dt, '%h'), UNSIGNED INTEGER) % {$interval} = 0
-			";
+				AND CONVERT(DATE_FORMAT(dt, '%H'), UNSIGNED INTEGER) {$interval}";
 		}
 
 		// produce SQL query string
@@ -63,7 +67,7 @@
 		
 		$table=array();
 		$table['cols']=array(
-		        array('label'=>'Time', 'type'=>'date'),
+		        array('label'=>'Time', 'type'=>'datetime'),
 		        array('label'=>'v_battery', 'type'=>'number')
 		        // array('label'=>'a_inverter', 'type'=>'number')
 		);

@@ -1,0 +1,8 @@
+<?php
+	$db 		= 'qcs';		// database used to store historical data
+	$db_serv	= 'localhost';		// database server address
+	$db_user	= 'qcs_user';		// database username
+	$db_pass	= 'qcs_pass';		// database password
+	$controller	= 'http://10.0.0.1';	// controller address
+	$camera 	= 'http://10.0.0.2';	// IP camera address
+?>

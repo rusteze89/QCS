@@ -16,6 +16,7 @@
   table{width:auto !important;margin:0 auto}
   td,th{padding:0 2em;text-align:center !important}
   p{text-align:center;margin-top:1em}
+  select{width:auto}
 </style>
 <div class="navbar">
   <div class="navbar-inner">
@@ -51,6 +52,19 @@
   </table>
 </div>
 <div id="chart"></div>
+<p>Interval: <select id="data_freq">
+    <option value="5m" <?php echo (isset($_REQUEST['interval']) ? $_REQUEST['interval'] : "5m") == "5m" ? 'selected="selected"' : ''; ?>>5 Mins</option>
+    <option value="1h" <?php echo $_REQUEST['interval'] == "1h" ? 'selected="selected"' : ''; ?>>Hourly</option>
+    <option value="1d" <?php echo $_REQUEST['interval'] == "1d" ? 'selected="selected"' : ''; ?>>Daily</option>
+  </select>
+Points: <select id="data_limit">
+    <option <?php echo $_REQUEST['limit'] == 30 ? 'selected="selected"' : ''; ?>>30</option>
+    <option <?php echo $_REQUEST['limit'] == 50 ? 'selected="selected"' : ''; ?>>50</option>
+    <option <?php echo (isset($_REQUEST['limit']) ? $_REQUEST['limit'] : 100) == 100 ? 'selected="selected"' : ''; ?>>100</option>
+    <option <?php echo $_REQUEST['limit'] == 200 ? 'selected="selected"' : ''; ?>>200</option>
+    <option <?php echo $_REQUEST['limit'] == 500 ? 'selected="selected"' : ''; ?>>500</option>
+    <option <?php echo $_REQUEST['limit'] == 1000 ? 'selected="selected"' : ''; ?>>1000</option>
+  </select>
 </body>
 </html>
 
@@ -60,8 +74,8 @@
 
   function button(id, val) {
     if (val==-1) $('#'+id).attr('class', 'btn btn-inverse disabled').find('span').text('Manual');
-    if (val==0) $('#'+id).attr('class', 'btn btn-danger').find('span').text('Off');
-    if (val==1) $('#'+id).attr('class', 'btn btn-success').find('span').text('On');
+    if (val==0) $('#'+id).attr('class', 'btn btn-danger enabled').find('span').text('Off');
+    if (val==1) $('#'+id).attr('class', 'btn btn-success enabled').find('span').text('On');
   }
 
   function drawChart() {
@@ -69,11 +83,11 @@
     // https://developers.google.com/chart/interactive/docs/php_example
     var json = $.ajax({
       <?php
-        $interval = (int)(isset($_REQUEST['interval']) ? $_REQUEST['interval'] : 0);
+        $interval = (isset($_REQUEST['interval']) ? $_REQUEST['interval'] : "5m");
         $limit = (int)(isset($_REQUEST['limit']) ? $_REQUEST['limit']: 0);
         $int_str=$limit_str="";
         if ($interval)
-          $int_str = sprintf('&interval=%d', $interval);
+          $int_str = sprintf('&interval=%s', $interval);
         if ($limit)
           $limit_str = sprintf('&limit=%d', $limit);
         print('url: "data.php?history'.$int_str.$limit_str.'",');
@@ -89,7 +103,8 @@
       title: "Quoin Battery History",
       vAxis: {title: "Volts"},
       hAxis: {title: "Time"},
-      pointSize: 3
+      pointSize: 2,
+      legend: {position: 'none'}
     };
 
     var chart = new google.visualization.LineChart(document.getElementById('chart'));
@@ -97,25 +112,44 @@
   }
 
   function load_live_data() {
-    var json = $.ajax({
-      url: "data.php?live",
-      dataType: "json",
-      async: false
-    }).responseText;
+    $.getJSON('data.php?live', function(json) {
+      data = json.live_data;
 
-    data = JSON.parse(json).live_data;
+      time = new Date();
+      // Display data
+      $('#dt').text(time.getHours() + ':' + time.getMinutes() + ':' + time.getSeconds());
+      $('#vbat').text(data.Battery);
 
-    time = new Date();
-    // Display data
-    $('#dt').text(time.getHours() + ':' + time.getMinutes() + ':' + time.getSeconds());
-    $('#vbat').text(data.Battery);
-
-    // Toggles
-    button('r1', data.relay[0]);
-    button('r2', data.relay[1]);
+      // Toggles
+      button('r1', data.relay[0]);
+      button('r2', data.relay[1]);
+    })
   }
 
-  $('#r1,#r2').on('click', function() {
+  $('#data_freq').change(function() {
+    //alert('The option with value ' + $(this).val() + ' was selected.');
+    <?php
+      $limit = (int)(isset($_REQUEST['limit']) ? $_REQUEST['limit']: '');
+      if ($limit)
+        $limit = '&limit='.$limit;
+      else
+        $limit = '';
+      print('window.location = "index.php?interval="+$(this).val()+"'.$limit.'";');
+    ?>
+  });
+
+  $('#data_limit').change(function() {
+    <?php
+      $interval = (isset($_REQUEST['interval']) ? $_REQUEST['interval'] : '');
+      if ($interval)
+        $interval = '&interval='.$interval;
+      else
+        $interval = '';
+      print('window.location = "index.php?limit="+$(this).val()+"'.$interval.'";');
+    ?>
+  });
+
+  $('body').on('click', '#r1.enabled,#r2.enabled', function() {
     $.ajax({
       url: "data.php?r="+$(this).attr('id'),
       async: false
