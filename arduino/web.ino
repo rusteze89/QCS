@@ -27,6 +27,7 @@ void setupWeb() {
   byte mac[] = { 0xDE,0xAD,0xBE,0xEF,0xFE,0xEF };// mac address
   byte ip[]  = { 192,168,88,2 };        // ip address
   Ethernet.begin(mac,ip);               // start ethernet
+  delay(1000);                          // allow for ethernet chip to initialize
   webserver.begin();                    // start web server
   dataIndexLast = 0;
   #if DEBUG_WEB

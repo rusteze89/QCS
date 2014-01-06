@@ -66,11 +66,7 @@
     if (context[id]==1) $('#'+id).attr('class', 'btn btn-success').find('span').text('On');
   }
 
-<<<<<<< HEAD:web/index.html
   function scale(num) {return Math.round(num*100/51)/100;} // 0-20v scale out of 1024 resolution
-=======
-  function scale(num) {return num/51;} // 0-20v scale out of 1024 resolution
->>>>>>> 770d8f5c55ed7cd9953b5912ac539c57b9dc6434:web/quoin.html
   function callback(context) {
     // Hide loading message and show data
     $('#loading').remove();

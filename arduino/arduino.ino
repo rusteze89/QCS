@@ -52,7 +52,7 @@ void setup()
 {
   #if DEBUG_SER
     Serial.begin(115200);   // start serial for Debugging
-    delay(1);
+    delay(1000);            // allow for serial to initalize
     Serial.println("\n\nQuoin Control System");
     delay(5000);
   #endif
