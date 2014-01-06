@@ -14,4 +14,6 @@ Web folder contains web front end to load content from arduino and display it ni
 This was written by Kanshii and only tweaked by me
 
 ## Setup
-in web/index.html replace my.device.net with the public address/ip that forwards to your device on port 80
+Copy web folder to your webserver directory /var/www/
+Edit include.php to match your controller and mysql setup, this is where the other php docs will get their information.
+Setup a crontab to run load_data.php periodically
